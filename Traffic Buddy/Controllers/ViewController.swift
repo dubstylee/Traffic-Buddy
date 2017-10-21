@@ -18,20 +18,20 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     @IBOutlet weak var countLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
+    @IBOutlet weak var toggleSwitch: UISwitch!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Do any additional setup after loading the view, typically from a nib.
-        // Ask for Authorisation from the User.
         self.locationManager.requestAlwaysAuthorization()
-        
-        // For use in foreground
         self.locationManager.requestWhenInUseAuthorization()
         
         if CLLocationManager.locationServicesEnabled() {
+            locationManager.allowsBackgroundLocationUpdates = true
             locationManager.delegate = self
             locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+            locationManager.distanceFilter = 0.5
+            // locationManager.showsBackgroundLocationIndicator = true
             locationManager.startUpdatingLocation()
         }
         
@@ -46,7 +46,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     
     func closestLocation(locations: [CLLocation], closestToLocation location: CLLocation) -> CLLocation? {
         if let closestLocation = locations.min(by: { location.distance(from: $0) < location.distance(from: $1) }) {
-//            nearestIntersectionLabel.text = "closest location: \(closestLocation), distance: \(location.distance(from: closestLocation)) meters"
             return closestLocation
         } else {
             nearestIntersectionLabel.text = "locations is empty"

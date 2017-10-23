@@ -7,16 +7,29 @@
 //
 
 import CoreLocation
+import Realm
+import RealmSwift
 import UIKit
 
-public class Intersection: NSObject {
-    var location : CLLocation // GPS info
-    var title : String
+@objcMembers
+class Intersection: Object {
+    dynamic var longitude : Double = 0.0
+    dynamic var latitude : Double = 0.0
+    dynamic var title : String = ""
+
+    required init() {
+        super.init()
+    }
     
-    // timing
+    required init(realm: RLMRealm, schema: RLMObjectSchema) {
+        super.init(realm: realm, schema: schema)
+    }
     
-    init(lat : Double, long : Double, name : String) {
-        location = CLLocation(latitude: lat, longitude: long)
-        title = name
+    required init(value: Any, schema: RLMSchema) {
+        super.init(value: value, schema: schema)
+    }
+    
+    func getLocation() -> CLLocation {
+        return CLLocation(latitude: 0, longitude: 0)
     }
 }

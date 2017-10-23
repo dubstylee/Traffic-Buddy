@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7D2618722DD5605EBCB772D7 /* Pods_Traffic_Buddy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DD9031CDFC948AE5D6D829E /* Pods_Traffic_Buddy.framework */; };
 		D361D0D71F81EB2E0060F25A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0D61F81EB2E0060F25A /* AppDelegate.swift */; };
 		D361D0D91F81EB2E0060F25A /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0D81F81EB2E0060F25A /* ViewController.swift */; };
 		D361D0DC1F81EB2E0060F25A /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D361D0DA1F81EB2E0060F25A /* Main.storyboard */; };
@@ -16,6 +17,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		15176B35FACD163915569F1B /* Pods-Traffic Buddy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Traffic Buddy.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy.debug.xcconfig"; sourceTree = "<group>"; };
+		232EF00B66F7DDBB3F765D36 /* Pods-Traffic Buddy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Traffic Buddy.release.xcconfig"; path = "Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy.release.xcconfig"; sourceTree = "<group>"; };
+		9DD9031CDFC948AE5D6D829E /* Pods_Traffic_Buddy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Traffic_Buddy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D361D0D31F81EB2E0060F25A /* Traffic Buddy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Traffic Buddy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D361D0D61F81EB2E0060F25A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D361D0D81F81EB2E0060F25A /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -31,17 +35,37 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D2618722DD5605EBCB772D7 /* Pods_Traffic_Buddy.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		27034D678681EC2128ADAF55 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				15176B35FACD163915569F1B /* Pods-Traffic Buddy.debug.xcconfig */,
+				232EF00B66F7DDBB3F765D36 /* Pods-Traffic Buddy.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
+		85A321201F9E621100ACE46E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				9DD9031CDFC948AE5D6D829E /* Pods_Traffic_Buddy.framework */,
+			);
+			name = Frameworks;
+			sourceTree = SOURCE_ROOT;
+		};
 		D361D0CA1F81EB2E0060F25A = {
 			isa = PBXGroup;
 			children = (
 				D361D0D51F81EB2E0060F25A /* Traffic Buddy */,
 				D361D0D41F81EB2E0060F25A /* Products */,
+				85A321201F9E621100ACE46E /* Frameworks */,
+				27034D678681EC2128ADAF55 /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -98,9 +122,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D361D0E51F81EB2E0060F25A /* Build configuration list for PBXNativeTarget "Traffic Buddy" */;
 			buildPhases = (
+				6A73FF3D041DE2F4BBBF8622 /* [CP] Check Pods Manifest.lock */,
 				D361D0CF1F81EB2E0060F25A /* Sources */,
 				D361D0D01F81EB2E0060F25A /* Frameworks */,
 				D361D0D11F81EB2E0060F25A /* Resources */,
+				0B77372A149B4479F76E8F4D /* [CP] Embed Pods Frameworks */,
+				C742AFEE5F4A8ADC51609569 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -162,6 +189,62 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0B77372A149B4479F76E8F4D /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${SRCROOT}/Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/Realm/Realm.framework",
+				"${BUILT_PRODUCTS_DIR}/RealmSwift/RealmSwift.framework",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Realm.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RealmSwift.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		6A73FF3D041DE2F4BBBF8622 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Traffic Buddy-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		C742AFEE5F4A8ADC51609569 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		D361D0CF1F81EB2E0060F25A /* Sources */ = {
@@ -305,6 +388,7 @@
 		};
 		D361D0E61F81EB2E0060F25A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 15176B35FACD163915569F1B /* Pods-Traffic Buddy.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
@@ -320,6 +404,7 @@
 		};
 		D361D0E71F81EB2E0060F25A /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 232EF00B66F7DDBB3F765D36 /* Pods-Traffic Buddy.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;

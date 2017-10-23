@@ -9,6 +9,8 @@
 import AudioToolbox
 import CoreLocation
 import MapKit
+import Realm
+import RealmSwift
 import UIKit
 
 class ViewController: UIViewController, CLLocationManagerDelegate {
@@ -16,6 +18,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     var nearIntersection = false
     let locationManager = CLLocationManager()
     let distanceThreshold = 1320.0 // quarter mile
+    let realm = try! Realm()
     
     @IBOutlet var mainBackground: UIView!
     @IBOutlet weak var infoLabel: UILabel!
@@ -26,7 +29,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        debugPrint("Path to realm file: " + realm.configuration.fileURL!.absoluteString)
         self.locationManager.requestAlwaysAuthorization()
         self.locationManager.requestWhenInUseAuthorization()
         
@@ -38,7 +41,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             // locationManager.showsBackgroundLocationIndicator = true
             locationManager.startUpdatingLocation()
         }
-        
+
+        /*
         intersections.append(Intersection(lat: 44.084221, long: -123.061607, name: "Cambridge Oaks Dr"))
         intersections.append(Intersection(lat: 44.080277, long: -123.067722, name: "Coburg & Willakenzie"))
         intersections.append(Intersection(lat: 44.040030, long: -123.080198, name: "18th & Alder"))
@@ -46,6 +50,19 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         intersections.append(Intersection(lat: 44.045689, long: -123.066324, name: "13th & Franklin"))
         intersections.append(Intersection(lat: 44.056741, long: -123.024210, name: "Centennial & Pioneer Pkwy W"))
         intersections.append(Intersection(lat: 44.056656, long: -123.023835, name: "Centennial & Pioneer Pkwy E"))
+         */
+        initRealm()
+    }
+    
+    func initRealm() {
+        let intersection = Intersection()
+        intersection.latitude = 44.084221
+        intersection.longitude = -123.061607
+        intersection.title = "Cambridge Oaks Dr"
+        
+        try! realm.write {
+            realm.add(intersection)
+        }
     }
     
     func metersToFeet(from: Double) -> Double {
@@ -95,14 +112,15 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             locationManager.requestLocation()
             
             // make CLLocation array from intersections
-            var coords = [CLLocation]()
-            for i in (0...intersections.count-1) {
-                coords.append(intersections[i].location)
-            }
+//            var coords = [CLLocation]()
+  //          for i in (0...intersections.count-1) {
+    //            coords.append(intersections[i].getLocation())
+      //      }
             
-            let nearest = closestLocation(locations: coords, closestToLocation: locationManager.location!)
+//            let nearest = closestLocation(locations: coords, closestToLocation: locationManager.location!)
+            let nearest = CLLocation(latitude: 120, longitude: -120)
             if nearest != nil {
-                let dist = metersToFeet(from: nearest!.distance(from: locationManager.location!))
+                let dist = metersToFeet(from: nearest.distance(from: locationManager.location!))
                 
                 if dist < distanceThreshold {
                     // auto-poll server within quarter mile
@@ -123,12 +141,12 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
                     mainBackground.backgroundColor = UIColor.white
                 }
 
-                for i in (0...intersections.count-1) {
-                    if intersections[i].location == nearest {
-                        nearestIntersectionLabel.text = "Nearest Intersection:\n  \(intersections[i].title)\nDistance:\n  \(String(describing: dist)) feet"
-                        break
-                    }
-                }
+//                for i in (0...intersections.count-1) {
+  //                  if intersections[i].getLocation() == nearest {
+    //                    nearestIntersectionLabel.text = "Nearest Intersection:\n  \(intersections[i].title)\nDistance:\n  \(String(describing: dist)) feet"
+      //                  break
+        //            }
+           //     }
             }
         }
     }

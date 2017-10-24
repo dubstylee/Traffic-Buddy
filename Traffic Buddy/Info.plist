@@ -20,6 +20,8 @@
 	<string>1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>${PRODUCT_NAME} uses your location to communicate with the nearest intersection controller.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>${PRODUCT_NAME} needs this permission in order to access your location when running in the background.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
@@ -43,9 +45,6 @@
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 </dict>
 </plist>

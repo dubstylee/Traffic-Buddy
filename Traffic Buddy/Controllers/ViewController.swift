@@ -29,7 +29,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        debugPrint("Path to realm file: " + realm.configuration.fileURL!.absoluteString)
+        //debugPrint("Path to realm file: " + realm.configuration.fileURL!.absoluteString)
         self.locationManager.requestAlwaysAuthorization()
         self.locationManager.requestWhenInUseAuthorization()
         

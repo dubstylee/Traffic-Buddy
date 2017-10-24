@@ -14,11 +14,11 @@ import RealmSwift
 import UIKit
 
 class ViewController: UIViewController, CLLocationManagerDelegate {
-    var intersections = [Intersection]()
     var nearIntersection = false
     let locationManager = CLLocationManager()
     let distanceThreshold = 1320.0 // quarter mile
     let realm = try! Realm()
+    var intersections : Results<Intersection>!
     
     @IBOutlet var mainBackground: UIView!
     @IBOutlet weak var infoLabel: UILabel!
@@ -42,27 +42,33 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             locationManager.startUpdatingLocation()
         }
 
-        /*
-        intersections.append(Intersection(lat: 44.084221, long: -123.061607, name: "Cambridge Oaks Dr"))
-        intersections.append(Intersection(lat: 44.080277, long: -123.067722, name: "Coburg & Willakenzie"))
-        intersections.append(Intersection(lat: 44.040030, long: -123.080198, name: "18th & Alder"))
-        intersections.append(Intersection(lat: 44.045489, long: -123.070931, name: "13th Ave Kiosk"))
-        intersections.append(Intersection(lat: 44.045689, long: -123.066324, name: "13th & Franklin"))
-        intersections.append(Intersection(lat: 44.056741, long: -123.024210, name: "Centennial & Pioneer Pkwy W"))
-        intersections.append(Intersection(lat: 44.056656, long: -123.023835, name: "Centennial & Pioneer Pkwy E"))
-         */
+        centerMapOnLocation(location: locationManager.location!)
         initRealm()
     }
     
+    let regionRadius: CLLocationDistance = 1000
+    func centerMapOnLocation(location: CLLocation) {
+        let coordinateRegion = MKCoordinateRegionMakeWithDistance(location.coordinate,
+                                                                  regionRadius, regionRadius)
+        mapView.setRegion(coordinateRegion, animated: true)
+    }
+    
     func initRealm() {
-        let intersection = Intersection()
-        intersection.latitude = 44.084221
-        intersection.longitude = -123.061607
-        intersection.title = "Cambridge Oaks Dr"
-        
-        try! realm.write {
-            realm.add(intersection)
+        intersections = realm.objects(Intersection.self)
+
+        if intersections.count == 0 {
+            try! realm.write {
+                realm.add(Intersection(latitude: 44.084221, longitude: -123.061607, title: "Cambridge Oaks Dr"))
+                realm.add(Intersection(latitude: 44.080277, longitude: -123.067722, title: "Coburg & Willakenzie"))
+                realm.add(Intersection(latitude: 44.040030, longitude: -123.080198, title: "18th & Alder"))
+                realm.add(Intersection(latitude: 44.045489, longitude: -123.070931, title: "13th Ave Kiosk"))
+                realm.add(Intersection(latitude: 44.045689, longitude: -123.066324, title: "13th & Franklin"))
+                realm.add(Intersection(latitude: 44.056741, longitude: -123.024210, title: "Centennial & Pioneer Pkwy W"))
+                realm.add(Intersection(latitude: 44.056656, longitude: -123.023835, title: "Centennial & Pioneer Pkwy E"))
+            }
         }
+        
+        infoLabel.text = "# intersections: \(intersections.count)"
     }
     
     func metersToFeet(from: Double) -> Double {
@@ -96,9 +102,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         
         locationLabel.text = "Current Location:\n  \(locValue.latitude) \(locValue.longitude)"
         
-        let center = CLLocationCoordinate2D(latitude: locValue.latitude, longitude: locValue.longitude)
-        let region = MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
-        mapView.setRegion(region, animated: true)
         displayClosestIntersection()
     }
     
@@ -112,15 +115,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             locationManager.requestLocation()
             
             // make CLLocation array from intersections
-//            var coords = [CLLocation]()
-  //          for i in (0...intersections.count-1) {
-    //            coords.append(intersections[i].getLocation())
-      //      }
+            var coords = [CLLocation]()
+            for i in (0...intersections.count-1) {
+                coords.append(intersections[i].getLocation())
+            }
             
-//            let nearest = closestLocation(locations: coords, closestToLocation: locationManager.location!)
-            let nearest = CLLocation(latitude: 120, longitude: -120)
+            let nearest = closestLocation(locations: coords, closestToLocation: locationManager.location!)
             if nearest != nil {
-                let dist = metersToFeet(from: nearest.distance(from: locationManager.location!))
+                let dist = metersToFeet(from: nearest!.distance(from: locationManager.location!))
                 
                 if dist < distanceThreshold {
                     // auto-poll server within quarter mile
@@ -141,12 +143,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
                     mainBackground.backgroundColor = UIColor.white
                 }
 
-//                for i in (0...intersections.count-1) {
-  //                  if intersections[i].getLocation() == nearest {
-    //                    nearestIntersectionLabel.text = "Nearest Intersection:\n  \(intersections[i].title)\nDistance:\n  \(String(describing: dist)) feet"
-      //                  break
-        //            }
-           //     }
+                for i in (0...intersections.count-1) {
+                    if intersections[i].latitude == nearest!.coordinate.latitude &&
+                            intersections[i].longitude == nearest!.coordinate.longitude {
+                        nearestIntersectionLabel.text = "Nearest Intersection:\n  \(intersections[i].title)\nDistance:\n  \(String(describing: dist)) feet"
+                        break
+                    }
+                }
             }
         }
     }
@@ -161,7 +164,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
                 else {
                     mainBackground.backgroundColor = UIColor.red
                 }
-                infoLabel.text = contents
+                //infoLabel.text = contents
             } catch {
                 // contents could not be loaded
                 infoLabel.text = "couldn't load url"

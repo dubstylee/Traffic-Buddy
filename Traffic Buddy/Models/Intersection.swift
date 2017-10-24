@@ -29,7 +29,16 @@ class Intersection: Object {
         super.init(value: value, schema: schema)
     }
     
-    func getLocation() -> CLLocation {
-        return CLLocation(latitude: 0, longitude: 0)
+    convenience init(latitude: Double, longitude: Double, title: String) {
+        self.init()
+        self.latitude = latitude
+        self.longitude = longitude
+        self.title = title
     }
+    
+    func getLocation() -> CLLocation {
+        return CLLocation(latitude: self.latitude, longitude: self.longitude)
+    }
+    
+    public override var description: String { return "Intersection [\(title): LAT: \(latitude), LONG: \(longitude)\\n" }
 }

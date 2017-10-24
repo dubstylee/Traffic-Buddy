@@ -42,7 +42,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             locationManager.startUpdatingLocation()
         }
 
-        centerMapOnLocation(location: locationManager.location!)
+        if locationManager.location != nil {
+            centerMapOnLocation(location: locationManager.location!)
+        }
         initRealm()
     }
     

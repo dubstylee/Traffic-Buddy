@@ -9,6 +9,7 @@
 import AudioToolbox
 import CoreLocation
 import MapKit
+import Particle_SDK
 import Realm
 import RealmSwift
 import UIKit
@@ -19,6 +20,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     let distanceThreshold = 1320.0 // quarter mile
     let realm = try! Realm()
     var intersections : Results<Intersection>!
+    var locationRealm: Realm?
     
     @IBOutlet var mainBackground: UIView!
     @IBOutlet weak var infoLabel: UILabel!
@@ -46,6 +48,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             centerMapOnLocation(location: locationManager.location!)
         }
         initRealm()
+        
+        //if ParticleCloud.sharedInstance().injectSessionAccessToken("9bb9f7433940e7c808b191c28cd6738f8d12986c") {
+        if ParticleCloud.sharedInstance().injectSessionAccessToken("0b4646219d33751d1c976ec567e6b9263ddda12f") {
+            infoLabel.text = "session active"
+            getDevices()
+        } else {
+            infoLabel.text = "bad token"
+        }
     }
     
     let regionRadius: CLLocationDistance = 1000
@@ -55,6 +65,26 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         mapView.setRegion(coordinateRegion, animated: true)
     }
     
+    var myPhoton : ParticleDevice?
+    func getDevices() {
+        ParticleCloud.sharedInstance().getDevices {
+            (devices:[ParticleDevice]?, error:Error?) -> Void in
+            if let _ = error {
+                self.infoLabel.text = "check your internet connectivity"
+            }
+            else {
+                if let d = devices {
+                    for device in d {
+                        if device.name == "beacon_2" {
+                            self.myPhoton = device
+                            self.infoLabel.text = "found beacon_2"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     func initRealm() {
         intersections = realm.objects(Intersection.self)
 
@@ -71,6 +101,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         }
         
         infoLabel.text = "# intersections: \(intersections.count)"
+        /*let config = Realm.Configuration(
+            fileURL: Bundle.main.url(forResource: "locationhistory", withExtension: "realm"),
+            readOnly: false)
+        locationRealm = try! Realm(configuration: config)*/
     }
     
     func metersToFeet(from: Double) -> Double {
@@ -128,8 +162,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
                 
                 if dist < distanceThreshold {
                     // auto-poll server within quarter mile
-                    pollServer()
-
+                    //pollServer()
+                    if myPhoton != nil {
+                        readLedState()
+                    }
+                    
                     // if the user is not already near an intersection, vibrate to notify
                     if dist < 50.0 && !nearIntersection {
                         nearIntersection = true
@@ -175,9 +212,45 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             // the URL was bad!
         }
     }
+    
+    func readLedState() {
+        myPhoton!.getVariable("led_state", completion: { (result:Any?, error:Error?) -> Void in
+            if let _ = error {
+                self.infoLabel.text = "failed reading led status from device"
+            }
+            else {
+                if let status = result as? String {
+                    if status == "on" {
+                        self.mainBackground.backgroundColor = UIColor.green
+                    }
+                    else {
+                        self.mainBackground.backgroundColor = UIColor.red
+                    }
+                    self.infoLabel.text = "led is \(status)"
+                }
+            }
+        })
+    }
+    
+    func toggleLedState() {
+        //let funcArgs = ["D7",1]
+        let task = myPhoton!.callFunction("toggle_led", withArguments: nil) { (resultCode : NSNumber?, error : Error?) -> Void in
+            if (error == nil) {
+                self.infoLabel.text = "toggle led successful"
+            }
+        }
+        let bytes : Int64 = task.countOfBytesExpectedToReceive
+        if bytes > 0 {
+            // ..do something with bytesToReceive
+        }
+    }
 
     @IBAction func pollServerButton(_ sender: Any) {
-        pollServer()
+        readLedState()
+    }
+    
+    @IBAction func toggleLedButton(_ sender: Any) {
+        toggleLedState()
     }
 }
 

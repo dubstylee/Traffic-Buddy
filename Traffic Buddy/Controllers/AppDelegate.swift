@@ -7,14 +7,23 @@
 //
 
 import UIKit
+import Realm
+import RealmSwift
+
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
+    //var realm: Realm?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        // make sure location history realm is created
+        /*let config = Realm.Configuration(
+            fileURL: Bundle.main.url(forResource: "locationhistory", withExtension: "realm"),
+            readOnly: false)
+        realm = try! Realm(configuration: config)*/
         return true
     }
 

@@ -1,17 +1,42 @@
 PODS:
-  - Realm (3.0.0):
-    - Realm/Headers (= 3.0.0)
-  - Realm/Headers (3.0.0)
-  - RealmSwift (3.0.0):
-    - Realm (= 3.0.0)
+  - AFNetworking (3.1.0):
+    - AFNetworking/NSURLSession (= 3.1.0)
+    - AFNetworking/Reachability (= 3.1.0)
+    - AFNetworking/Security (= 3.1.0)
+    - AFNetworking/Serialization (= 3.1.0)
+    - AFNetworking/UIKit (= 3.1.0)
+  - AFNetworking/NSURLSession (3.1.0):
+    - AFNetworking/Reachability
+    - AFNetworking/Security
+    - AFNetworking/Serialization
+  - AFNetworking/Reachability (3.1.0)
+  - AFNetworking/Security (3.1.0)
+  - AFNetworking/Serialization (3.1.0)
+  - AFNetworking/UIKit (3.1.0):
+    - AFNetworking/NSURLSession
+  - Particle-SDK (0.7.0):
+    - Particle-SDK/Helpers (= 0.7.0)
+    - Particle-SDK/SDK (= 0.7.0)
+  - Particle-SDK/Helpers (0.7.0)
+  - Particle-SDK/SDK (0.7.0):
+    - AFNetworking (~> 3.0)
+    - Particle-SDK/Helpers
+  - Realm (3.0.1):
+    - Realm/Headers (= 3.0.1)
+  - Realm/Headers (3.0.1)
+  - RealmSwift (3.0.1):
+    - Realm (= 3.0.1)
 
 DEPENDENCIES:
+  - Particle-SDK
   - RealmSwift
 
 SPEC CHECKSUMS:
-  Realm: dec0de73be8c57506e39db72694d513c189493b3
-  RealmSwift: 44a7090b16d1b22a406c6bf129bdd602db1bbecc
+  AFNetworking: 5e0e199f73d8626b11e79750991f5d173d1f8b67
+  Particle-SDK: d08e4a9e42c927bd997cd4817e5a01894ace4187
+  Realm: ba6144c74f835f7497791f6599d63a7755377b83
+  RealmSwift: 7d13b1ac4b6022a13f841e3143e7789c9e40ad0d
 
-PODFILE CHECKSUM: ee079ee5a961c1fb60e0a8d8225851e72412e7a6
+PODFILE CHECKSUM: c02fc2d14f8d3b35cd8f68c0bf59013e8175c759
 
 COCOAPODS: 1.3.1

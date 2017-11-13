@@ -9,4 +9,5 @@ target 'Traffic Buddy' do
   # Pods for Traffic Buddy
   pod 'RealmSwift'
   pod 'Particle-SDK'
+  pod 'HCKalmanFilter'
 end

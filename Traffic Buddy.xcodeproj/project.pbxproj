@@ -15,6 +15,7 @@
 		D361D0DE1F81EB2E0060F25A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D361D0DD1F81EB2E0060F25A /* Assets.xcassets */; };
 		D361D0E11F81EB2E0060F25A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D361D0DF1F81EB2E0060F25A /* LaunchScreen.storyboard */; };
 		D361D0EA1F81EC120060F25A /* Intersection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0E91F81EC120060F25A /* Intersection.swift */; };
+		D3AE0BA01FB95F1D00DCD5BA /* particle.conf in Resources */ = {isa = PBXBuildFile; fileRef = D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 		D361D0E01F81EB2E0060F25A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		D361D0E21F81EB2E0060F25A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D361D0E91F81EC120060F25A /* Intersection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intersection.swift; sourceTree = "<group>"; };
+		D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = particle.conf; path = "Traffic Buddy/particle.conf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +66,7 @@
 		D361D0CA1F81EB2E0060F25A = {
 			isa = PBXGroup;
 			children = (
+				D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */,
 				D361D0D51F81EB2E0060F25A /* Traffic Buddy */,
 				D361D0D41F81EB2E0060F25A /* Products */,
 				85A321201F9E621100ACE46E /* Frameworks */,
@@ -186,6 +189,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D361D0E11F81EB2E0060F25A /* LaunchScreen.storyboard in Resources */,
+				D3AE0BA01FB95F1D00DCD5BA /* particle.conf in Resources */,
 				D361D0DE1F81EB2E0060F25A /* Assets.xcassets in Resources */,
 				D361D0DC1F81EB2E0060F25A /* Main.storyboard in Resources */,
 			);
@@ -202,6 +206,7 @@
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/AFNetworking/AFNetworking.framework",
+				"${BUILT_PRODUCTS_DIR}/HCKalmanFilter/HCKalmanFilter.framework",
 				"${BUILT_PRODUCTS_DIR}/Particle-SDK/Particle_SDK.framework",
 				"${BUILT_PRODUCTS_DIR}/Realm/Realm.framework",
 				"${BUILT_PRODUCTS_DIR}/RealmSwift/RealmSwift.framework",
@@ -209,6 +214,7 @@
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/AFNetworking.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/HCKalmanFilter.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Particle_SDK.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Realm.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RealmSwift.framework",

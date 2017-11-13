@@ -14,10 +14,10 @@
             buildForArchiving = "YES">
             <BuildableReference
                BuildableIdentifier = 'primary'
-               BlueprintIdentifier = 'EBDB2CB8AB8C37C2D1F62FCF3CA1C9CA'
-               BlueprintName = 'RealmSwift'
+               BlueprintIdentifier = '4763C73CD4A131D258EE73598963EB01'
+               BlueprintName = 'HCKalmanFilter'
                ReferencedContainer = 'container:Pods.xcodeproj'
-               BuildableName = 'RealmSwift.framework'>
+               BuildableName = 'HCKalmanFilter.framework'>
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>

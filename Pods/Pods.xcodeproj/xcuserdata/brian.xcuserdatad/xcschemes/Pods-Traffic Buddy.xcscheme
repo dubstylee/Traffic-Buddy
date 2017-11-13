@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0900"
+   LastUpgradeVersion = "0700"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "52C342AFE5DEC24E498F7D527887F5FB"
+               BlueprintIdentifier = "0E29B1D5EE75EDF195092B64653AAB9E"
                BuildableName = "Pods_Traffic_Buddy.framework"
                BlueprintName = "Pods-Traffic Buddy"
                ReferencedContainer = "container:Pods.xcodeproj">
@@ -47,7 +47,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "52C342AFE5DEC24E498F7D527887F5FB"
+            BlueprintIdentifier = "0E29B1D5EE75EDF195092B64653AAB9E"
             BuildableName = "Pods_Traffic_Buddy.framework"
             BlueprintName = "Pods-Traffic Buddy"
             ReferencedContainer = "container:Pods.xcodeproj">

@@ -13,27 +13,42 @@ import Particle_SDK
 import Realm
 import RealmSwift
 import UIKit
+import HCKalmanFilter
 
 class ViewController: UIViewController, CLLocationManagerDelegate {
     var nearIntersection = false
     let locationManager = CLLocationManager()
     let distanceThreshold = 1320.0 // quarter mile
     let realm = try! Realm()
-    var intersections : Results<Intersection>!
+    var intersections: Results<Intersection>!
     var locationRealm: Realm?
+    var token: String?
+    var hcKalmanFilter: HCKalmanAlgorithm?
+    var resetKalmanFilter: Bool = false
+    var polling: Bool = false
     
     @IBOutlet var mainBackground: UIView!
     @IBOutlet weak var infoLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
-    @IBOutlet weak var toggleSwitch: UISwitch!
     @IBOutlet weak var mapView: MKMapView!
+    @IBOutlet weak var startButton: UIButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        //debugPrint("Path to realm file: " + realm.configuration.fileURL!.absoluteString)
         self.locationManager.requestAlwaysAuthorization()
         self.locationManager.requestWhenInUseAuthorization()
+        
+        if let path = Bundle.main.path(forResource: "particle", ofType: "conf") {
+            do {
+                token = try String(contentsOfFile: path, encoding: String.Encoding.utf8)
+                token = token!.trimmingCharacters(in: NSCharacterSet.newlines)
+            } catch {
+                print("Failed to read text from particle.conf")
+            }
+        } else {
+            print("Failed to load file from app bundle particle.conf")
+        }
         
         if CLLocationManager.locationServicesEnabled() {
             locationManager.allowsBackgroundLocationUpdates = true
@@ -49,8 +64,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         }
         initRealm()
         
-        //if ParticleCloud.sharedInstance().injectSessionAccessToken("9bb9f7433940e7c808b191c28cd6738f8d12986c") {
-        if ParticleCloud.sharedInstance().injectSessionAccessToken("0b4646219d33751d1c976ec567e6b9263ddda12f") {
+        if ParticleCloud.sharedInstance().injectSessionAccessToken(token!) {
             infoLabel.text = "session active"
             getDevices()
         } else {
@@ -134,9 +148,27 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        let locValue:CLLocationCoordinate2D = manager.location!.coordinate
-        
-        locationLabel.text = "Current Location:\n  \(locValue.latitude) \(locValue.longitude)"
+        let myLocation: CLLocation = locations.first!
+
+        if hcKalmanFilter == nil {
+            self.hcKalmanFilter = HCKalmanAlgorithm(initialLocation: myLocation)
+        }
+        else {
+            if let hcKalmanFilter = self.hcKalmanFilter {
+                if resetKalmanFilter == true {
+                    hcKalmanFilter.resetKalman(newStartLocation: myLocation)
+                    resetKalmanFilter = false
+                }
+                else {
+                    //print(myLocation.coordinate)
+                    //let kalmanLocation = hcKalmanFilter.processState(currentLocation: myLocation)
+                    //print(kalmanLocation.coordinate)
+                    let locValue:CLLocationCoordinate2D = myLocation.coordinate
+                    
+                    locationLabel.text = "Current Location:\n  \(locValue.latitude) \(locValue.longitude)"
+                }
+            }
+        }
         
         displayClosestIntersection()
     }
@@ -149,6 +181,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     {
         if CLLocationManager.locationServicesEnabled() {
             locationManager.requestLocation()
+            //let kalmanLocation = self.hcKalmanFilter?.processState(currentLocation: locationManager.location!)
             
             // make CLLocation array from intersections
             var coords = [CLLocation]()
@@ -160,7 +193,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             if nearest != nil {
                 let dist = metersToFeet(from: nearest!.distance(from: locationManager.location!))
                 
-                if dist < distanceThreshold {
+                if dist < distanceThreshold && polling {
                     // auto-poll server within quarter mile
                     //pollServer()
                     if myPhoton != nil {
@@ -179,6 +212,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
                         AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
                     }
                 } else {
+                    polling = false
                     mainBackground.backgroundColor = UIColor.white
                 }
 
@@ -193,6 +227,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         }
     }
     
+    /*
     func pollServer() {
         if let url = URL(string: "https://dubflask.herokuapp.com") {
             do {
@@ -212,6 +247,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             // the URL was bad!
         }
     }
+    */
     
     func readLedState() {
         myPhoton!.getVariable("led_state", completion: { (result:Any?, error:Error?) -> Void in
@@ -233,7 +269,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     }
     
     func toggleLedState() {
-        //let funcArgs = ["D7",1]
         let task = myPhoton!.callFunction("toggle_led", withArguments: nil) { (resultCode : NSNumber?, error : Error?) -> Void in
             if (error == nil) {
                 self.infoLabel.text = "toggle led successful"
@@ -251,6 +286,18 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     
     @IBAction func toggleLedButton(_ sender: Any) {
         toggleLedState()
+    }
+    
+    @IBAction func pushStartButton(_ sender: Any) {
+        if startButton.titleLabel?.text == "Start" {
+            startButton.setTitle("Stop", for: .normal)
+            polling = true
+        }
+        else if startButton.titleLabel?.text == "Stop" {
+            startButton.setTitle("Start", for: .normal)
+            mainBackground.backgroundColor = UIColor.white
+            polling = false
+        }
     }
 }
 

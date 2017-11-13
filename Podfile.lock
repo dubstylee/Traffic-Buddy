@@ -14,6 +14,7 @@ PODS:
   - AFNetworking/Serialization (3.1.0)
   - AFNetworking/UIKit (3.1.0):
     - AFNetworking/NSURLSession
+  - HCKalmanFilter (1.1.0)
   - Particle-SDK (0.7.0):
     - Particle-SDK/Helpers (= 0.7.0)
     - Particle-SDK/SDK (= 0.7.0)
@@ -28,15 +29,17 @@ PODS:
     - Realm (= 3.0.1)
 
 DEPENDENCIES:
+  - HCKalmanFilter
   - Particle-SDK
   - RealmSwift
 
 SPEC CHECKSUMS:
   AFNetworking: 5e0e199f73d8626b11e79750991f5d173d1f8b67
+  HCKalmanFilter: 50cfd1f336886e11a7c48bc4ac2953df62c49128
   Particle-SDK: d08e4a9e42c927bd997cd4817e5a01894ace4187
   Realm: ba6144c74f835f7497791f6599d63a7755377b83
   RealmSwift: 7d13b1ac4b6022a13f841e3143e7789c9e40ad0d
 
-PODFILE CHECKSUM: c02fc2d14f8d3b35cd8f68c0bf59013e8175c759
+PODFILE CHECKSUM: 1e777dd1a5644dda1c3249dbc6f1f3dc5151e608
 
 COCOAPODS: 1.3.1

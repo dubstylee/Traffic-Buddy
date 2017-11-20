@@ -15,7 +15,7 @@ import RealmSwift
 import UIKit
 import HCKalmanFilter
 
-class ViewController: UIViewController, CLLocationManagerDelegate {
+class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate {
     var nearIntersection = false
     let locationManager = CLLocationManager()
     let distanceThreshold = 1320.0 // quarter mile
@@ -26,6 +26,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     var hcKalmanFilter: HCKalmanAlgorithm?
     var resetKalmanFilter: Bool = false
     var polling: Bool = false
+    var nearestIntersection: CLLocation?
     
     @IBOutlet var mainBackground: UIView!
     @IBOutlet weak var infoLabel: UILabel!
@@ -63,6 +64,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             centerMapOnLocation(location: locationManager.location!)
         }
         initRealm()
+        setupMapView()
         
         if ParticleCloud.sharedInstance().injectSessionAccessToken(token!) {
             infoLabel.text = "session active"
@@ -98,11 +100,31 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             }
         }
     }
+    
+    func setupMapView() {
+        mapView.delegate = self
+        for i in self.intersections {
+            // draw a circle to indicate intersection
+            let circle = MKCircle(center: i.getLocation().coordinate, radius: 10 as CLLocationDistance)
+            mapView.add(circle)
+        }
+    }
+    
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+        if overlay is MKCircle {
+            let circle = MKCircleRenderer(overlay: overlay)
+            circle.strokeColor = UIColor.red
+            circle.fillColor = UIColor(red: 255, green: 0, blue: 0, alpha: 0.1)
+            circle.lineWidth = 1
+            return circle
+        }
+        return MKOverlayRenderer()
+    }
 
     func initRealm() {
-        intersections = realm.objects(Intersection.self)
+        self.intersections = realm.objects(Intersection.self)
 
-        if intersections.count == 0 {
+        if self.intersections.count == 0 {
             try! realm.write {
                 realm.add(Intersection(latitude: 44.084221, longitude: -123.061607, title: "Cambridge Oaks Dr"))
                 realm.add(Intersection(latitude: 44.080277, longitude: -123.067722, title: "Coburg & Willakenzie"))
@@ -197,7 +219,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
                     // auto-poll server within quarter mile
                     //pollServer()
                     if myPhoton != nil {
-                        readLedState()
+                        //readLedState()
+                        readLoopState()
                     }
                     
                     // if the user is not already near an intersection, vibrate to notify
@@ -268,6 +291,25 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         })
     }
     
+    func readLoopState() {
+        myPhoton!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
+            if let _ = error {
+                self.infoLabel.text = "failed reading loop status from device"
+            }
+            else {
+                if let status = result as? String {
+                    if status == "on" {
+                        self.mainBackground.backgroundColor = UIColor.green
+                    }
+                    else {
+                        self.mainBackground.backgroundColor = UIColor.red
+                    }
+                    self.infoLabel.text = "loop is \(status)"
+                }
+            }
+        })
+    }
+    
     func toggleLedState() {
         let task = myPhoton!.callFunction("toggle_led", withArguments: nil) { (resultCode : NSNumber?, error : Error?) -> Void in
             if (error == nil) {
@@ -281,7 +323,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     }
 
     @IBAction func pollServerButton(_ sender: Any) {
-        readLedState()
+        //readLedState()
+        readLoopState()
     }
     
     @IBAction func toggleLedButton(_ sender: Any) {

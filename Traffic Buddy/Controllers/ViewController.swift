@@ -18,7 +18,8 @@ import HCKalmanFilter
 class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate {
     var nearIntersection = false
     let locationManager = CLLocationManager()
-    let distanceThreshold = 1320.0 // quarter mile
+    let distanceThreshold = 200.0 // 1320.0 == quarter mile
+    let metersPerSecToMilesPerHour = 2.23694
     let realm = try! Realm()
     var intersections: Results<Intersection>!
     var locationRealm: Realm?
@@ -27,11 +28,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     var resetKalmanFilter: Bool = false
     var polling: Bool = false
     var nearestIntersection: CLLocation?
+    var lastLocation: CLLocation?
     
     @IBOutlet var mainBackground: UIView!
     @IBOutlet weak var infoLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
+    @IBOutlet weak var speedCalculatedLabel: UILabel!
+    @IBOutlet weak var speedInstantLabel: UILabel!
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var startButton: UIButton!
     
@@ -191,6 +195,16 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 }
             }
         }
+        var instantSpeed = myLocation.speed
+        instantSpeed = max(instantSpeed, 0.0)
+        speedInstantLabel.text = String(format: "Instant Speed: %.2f mph", (instantSpeed * metersPerSecToMilesPerHour))
+
+        var calculatedSpeed = 0.0
+        if lastLocation != nil {
+            calculatedSpeed = lastLocation!.distance(from: myLocation) / (myLocation.timestamp.timeIntervalSince(lastLocation!.timestamp))
+            speedCalculatedLabel.text = String(format: "Calculated Speed: %.2f mph", (calculatedSpeed * metersPerSecToMilesPerHour))
+        }
+        lastLocation = myLocation
         
         displayClosestIntersection()
     }
@@ -325,10 +339,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     @IBAction func pollServerButton(_ sender: Any) {
         //readLedState()
         readLoopState()
-    }
-    
-    @IBAction func toggleLedButton(_ sender: Any) {
-        toggleLedState()
     }
     
     @IBAction func pushStartButton(_ sender: Any) {

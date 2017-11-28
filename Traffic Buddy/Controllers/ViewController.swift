@@ -130,13 +130,15 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
 
         if self.intersections.count == 0 {
             try! realm.write {
+                realm.add(Intersection(latitude: 44.040030, longitude: -123.080198, title: "18th & Alder"))
+                #if DEBUG
                 realm.add(Intersection(latitude: 44.084221, longitude: -123.061607, title: "Cambridge Oaks Dr"))
                 realm.add(Intersection(latitude: 44.080277, longitude: -123.067722, title: "Coburg & Willakenzie"))
-                realm.add(Intersection(latitude: 44.040030, longitude: -123.080198, title: "18th & Alder"))
                 realm.add(Intersection(latitude: 44.045489, longitude: -123.070931, title: "13th Ave Kiosk"))
                 realm.add(Intersection(latitude: 44.045689, longitude: -123.066324, title: "13th & Franklin"))
                 realm.add(Intersection(latitude: 44.056741, longitude: -123.024210, title: "Centennial & Pioneer Pkwy W"))
                 realm.add(Intersection(latitude: 44.056656, longitude: -123.023835, title: "Centennial & Pioneer Pkwy E"))
+                #endif
             }
         }
         
@@ -263,28 +265,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             }
         }
     }
-    
-    /*
-    func pollServer() {
-        if let url = URL(string: "https://dubflask.herokuapp.com") {
-            do {
-                let contents = try String(contentsOf: url)
-                if contents == "yes" {
-                    mainBackground.backgroundColor = UIColor.green
-                }
-                else {
-                    mainBackground.backgroundColor = UIColor.red
-                }
-                //infoLabel.text = contents
-            } catch {
-                // contents could not be loaded
-                infoLabel.text = "couldn't load url"
-            }
-        } else {
-            // the URL was bad!
-        }
-    }
-    */
     
     func readLedState() {
         myPhoton!.getVariable("led_state", completion: { (result:Any?, error:Error?) -> Void in

@@ -63,7 +63,6 @@
                                 </state>
                                 <connections>
                                     <action selector="pushStartButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="caX-6H-DVH"/>
-                                    <action selector="toggleLedButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="cvY-KZ-2QO"/>
                                 </connections>
                             </button>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Calculated Speed:" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="4" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="tdE-da-kXq">

@@ -1,0 +1,3 @@
+language: objective-c
+xcode_workspace: "Traffic Buddy.xcworkspace"
+xcode_scheme: "Traffic Buddy"

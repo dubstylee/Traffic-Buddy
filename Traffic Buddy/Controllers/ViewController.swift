@@ -34,7 +34,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     @IBOutlet weak var infoLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
-    @IBOutlet weak var speedCalculatedLabel: UILabel!
     @IBOutlet weak var speedInstantLabel: UILabel!
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var startButton: UIButton!
@@ -201,11 +200,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         instantSpeed = max(instantSpeed, 0.0)
         speedInstantLabel.text = String(format: "Instant Speed: %.2f mph", (instantSpeed * metersPerSecToMilesPerHour))
 
+        /*
         var calculatedSpeed = 0.0
         if lastLocation != nil {
             calculatedSpeed = lastLocation!.distance(from: myLocation) / (myLocation.timestamp.timeIntervalSince(lastLocation!.timestamp))
             speedCalculatedLabel.text = String(format: "Calculated Speed: %.2f mph", (calculatedSpeed * metersPerSecToMilesPerHour))
         }
+        */
         lastLocation = myLocation
         
         displayClosestIntersection()
@@ -330,6 +331,19 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             startButton.setTitle("Start", for: .normal)
             mainBackground.backgroundColor = UIColor.white
             polling = false
+        }
+    }
+    
+    @IBAction func triggerRelayButton(_ sender: Any) {
+        let relay_number = "1"
+        let task = myPhoton!.callFunction("relay_on", withArguments: [relay_number]) { (resultCode : NSNumber?, error : Error?) -> Void in
+            if (error == nil) {
+                self.infoLabel.text = "relay \(relay_number) on"
+            }
+        }
+        let bytes : Int64 = task.countOfBytesExpectedToReceive
+        if bytes > 0 {
+            // ..do something with bytesToReceive
         }
     }
 }

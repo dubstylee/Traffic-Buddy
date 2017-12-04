@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		7D2618722DD5605EBCB772D7 /* Pods_Traffic_Buddy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DD9031CDFC948AE5D6D829E /* Pods_Traffic_Buddy.framework */; };
 		D30D4AA71FA6A812004EC057 /* UserLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D30D4AA61FA6A812004EC057 /* UserLocation.swift */; };
+		D34D67101FD5161C003E1CEB /* Speedometer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34D670F1FD5161C003E1CEB /* Speedometer.swift */; };
 		D361D0D71F81EB2E0060F25A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0D61F81EB2E0060F25A /* AppDelegate.swift */; };
 		D361D0D91F81EB2E0060F25A /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0D81F81EB2E0060F25A /* ViewController.swift */; };
 		D361D0DC1F81EB2E0060F25A /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D361D0DA1F81EB2E0060F25A /* Main.storyboard */; };
@@ -23,6 +24,7 @@
 		232EF00B66F7DDBB3F765D36 /* Pods-Traffic Buddy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Traffic Buddy.release.xcconfig"; path = "Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy.release.xcconfig"; sourceTree = "<group>"; };
 		9DD9031CDFC948AE5D6D829E /* Pods_Traffic_Buddy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Traffic_Buddy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D30D4AA61FA6A812004EC057 /* UserLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserLocation.swift; sourceTree = "<group>"; };
+		D34D670F1FD5161C003E1CEB /* Speedometer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Speedometer.swift; sourceTree = "<group>"; };
 		D361D0D31F81EB2E0060F25A /* Traffic Buddy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Traffic Buddy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D361D0D61F81EB2E0060F25A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D361D0D81F81EB2E0060F25A /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -108,6 +110,7 @@
 			children = (
 				D361D0DF1F81EB2E0060F25A /* LaunchScreen.storyboard */,
 				D361D0DA1F81EB2E0060F25A /* Main.storyboard */,
+				D34D670F1FD5161C003E1CEB /* Speedometer.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -265,6 +268,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D361D0EA1F81EC120060F25A /* Intersection.swift in Sources */,
+				D34D67101FD5161C003E1CEB /* Speedometer.swift in Sources */,
 				D30D4AA71FA6A812004EC057 /* UserLocation.swift in Sources */,
 				D361D0D91F81EB2E0060F25A /* ViewController.swift in Sources */,
 				D361D0D71F81EB2E0060F25A /* AppDelegate.swift in Sources */,

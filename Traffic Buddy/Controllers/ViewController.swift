@@ -191,8 +191,28 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                     //let kalmanLocation = hcKalmanFilter.processState(currentLocation: myLocation)
                     //print(kalmanLocation.coordinate)
                     let locValue:CLLocationCoordinate2D = myLocation.coordinate
+                    var latString = "0°"
+                    var longString = "0°"
+
+                    if locValue.latitude > 0 {
+                        // north of equator
+                        latString = "\(locValue.latitude)° N"
+                    }
+                    else {
+                        // south of equator
+                        latString = "\(-locValue.latitude)° S"
+                    }
                     
-                    locationLabel.text = "Current Location:\n  \(locValue.latitude) \(locValue.longitude)"
+                    if locValue.longitude > 0 {
+                        // east of prime meridian
+                        longString = "\(locValue.longitude)° E"
+                    }
+                    else {
+                        // west of prime meridian
+                        longString = "\(-locValue.longitude)° W"
+                    }
+
+                    locationLabel.text = "\(latString) \(longString)"
                 }
             }
         }
@@ -259,7 +279,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 for i in (0...intersections.count-1) {
                     if intersections[i].latitude == nearest!.coordinate.latitude &&
                             intersections[i].longitude == nearest!.coordinate.longitude {
-                        nearestIntersectionLabel.text = "Nearest Intersection:\n  \(intersections[i].title)\nDistance:\n  \(String(describing: dist)) feet"
+                        nearestIntersectionLabel.text = String(format: "%.0f feet from \(intersections[i].title)", dist)
                         break
                     }
                 }
@@ -287,7 +307,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
     
     func readLoopState() {
-        myPhoton!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
+        myPhoton!.getVariable("serial_state", completion: { (result:Any?, error:Error?) -> Void in
             if let _ = error {
                 self.infoLabel.text = "failed reading loop status from device"
             }

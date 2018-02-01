@@ -37,9 +37,12 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     @IBOutlet weak var speedInstantLabel: UILabel!
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var startButton: UIButton!
+    @IBOutlet weak var relayStateView: UIView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.relayStateView.layer.borderColor = UIColor.black.cgColor
+        self.relayStateView.layer.borderWidth = 1.0
         self.locationManager.requestAlwaysAuthorization()
         self.locationManager.requestWhenInUseAuthorization()
         
@@ -106,6 +109,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     
     func setupMapView() {
         mapView.delegate = self
+        mapView.layer.borderColor = UIColor.black.cgColor
+        mapView.layer.borderWidth = 1.0
         for i in self.intersections {
             // draw a circle to indicate intersection
             let circle = MKCircle(center: i.getLocation().coordinate, radius: 10 as CLLocationDistance)
@@ -290,15 +295,16 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     func readLedState() {
         myPhoton!.getVariable("led_state", completion: { (result:Any?, error:Error?) -> Void in
             if let _ = error {
+                self.relayStateView.backgroundColor = UIColor.gray
                 self.infoLabel.text = "failed reading led status from device"
             }
             else {
                 if let status = result as? String {
                     if status == "on" {
-                        self.mainBackground.backgroundColor = UIColor.green
+                        self.relayStateView.backgroundColor = UIColor.green
                     }
                     else {
-                        self.mainBackground.backgroundColor = UIColor.red
+                        self.relayStateView.backgroundColor = UIColor.red
                     }
                     self.infoLabel.text = "led is \(status)"
                 }
@@ -307,17 +313,17 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
     
     func readLoopState() {
-        myPhoton!.getVariable("serial_state", completion: { (result:Any?, error:Error?) -> Void in
+        myPhoton!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
             if let _ = error {
                 self.infoLabel.text = "failed reading loop status from device"
             }
             else {
-                if let status = result as? String {
-                    if status == "on" {
-                        self.mainBackground.backgroundColor = UIColor.green
+                if let status = result as? Int { //String {
+                    if status == 1 { //"on" {
+                        self.relayStateView.backgroundColor = UIColor.green
                     }
                     else {
-                        self.mainBackground.backgroundColor = UIColor.red
+                        self.relayStateView.backgroundColor = UIColor.red
                     }
                     self.infoLabel.text = "loop is \(status)"
                 }
@@ -349,7 +355,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
         else if startButton.titleLabel?.text == "Stop" {
             startButton.setTitle("Start", for: .normal)
-            mainBackground.backgroundColor = UIColor.white
+            //mainBackground.backgroundColor = UIColor.white
             polling = false
         }
     }

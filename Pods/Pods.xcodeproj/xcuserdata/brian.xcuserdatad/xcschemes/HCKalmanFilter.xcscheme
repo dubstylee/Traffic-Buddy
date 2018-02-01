@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0910"
+   LastUpgradeVersion = "0920"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "4763C73CD4A131D258EE73598963EB01"
+               BlueprintIdentifier = "67698BA2CA426158F16FC6C07B8C8C1F"
                BuildableName = "HCKalmanFilter.framework"
                BlueprintName = "HCKalmanFilter"
                ReferencedContainer = "container:Pods.xcodeproj">
@@ -47,7 +47,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "4763C73CD4A131D258EE73598963EB01"
+            BlueprintIdentifier = "67698BA2CA426158F16FC6C07B8C8C1F"
             BuildableName = "HCKalmanFilter.framework"
             BlueprintName = "HCKalmanFilter"
             ReferencedContainer = "container:Pods.xcodeproj">

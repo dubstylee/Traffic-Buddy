@@ -1,20 +1,21 @@
 PODS:
-  - AFNetworking (3.1.0):
-    - AFNetworking/NSURLSession (= 3.1.0)
-    - AFNetworking/Reachability (= 3.1.0)
-    - AFNetworking/Security (= 3.1.0)
-    - AFNetworking/Serialization (= 3.1.0)
-    - AFNetworking/UIKit (= 3.1.0)
-  - AFNetworking/NSURLSession (3.1.0):
+  - AFNetworking (3.2.0):
+    - AFNetworking/NSURLSession (= 3.2.0)
+    - AFNetworking/Reachability (= 3.2.0)
+    - AFNetworking/Security (= 3.2.0)
+    - AFNetworking/Serialization (= 3.2.0)
+    - AFNetworking/UIKit (= 3.2.0)
+  - AFNetworking/NSURLSession (3.2.0):
     - AFNetworking/Reachability
     - AFNetworking/Security
     - AFNetworking/Serialization
-  - AFNetworking/Reachability (3.1.0)
-  - AFNetworking/Security (3.1.0)
-  - AFNetworking/Serialization (3.1.0)
-  - AFNetworking/UIKit (3.1.0):
+  - AFNetworking/Reachability (3.2.0)
+  - AFNetworking/Security (3.2.0)
+  - AFNetworking/Serialization (3.2.0)
+  - AFNetworking/UIKit (3.2.0):
     - AFNetworking/NSURLSession
-  - HCKalmanFilter (1.1.0)
+  - HCKalmanFilter (1.2.1):
+    - Surge (~> 2.0.0)
   - Particle-SDK (0.7.0):
     - Particle-SDK/Helpers (= 0.7.0)
     - Particle-SDK/SDK (= 0.7.0)
@@ -22,24 +23,27 @@ PODS:
   - Particle-SDK/SDK (0.7.0):
     - AFNetworking (~> 3.0)
     - Particle-SDK/Helpers
-  - Realm (3.0.2):
-    - Realm/Headers (= 3.0.2)
-  - Realm/Headers (3.0.2)
-  - RealmSwift (3.0.2):
-    - Realm (= 3.0.2)
+  - Realm (3.1.0):
+    - Realm/Headers (= 3.1.0)
+  - Realm/Headers (3.1.0)
+  - RealmSwift (3.1.0):
+    - Realm (= 3.1.0)
+  - Surge (2.0.0)
 
 DEPENDENCIES:
+  - AFNetworking
   - HCKalmanFilter
   - Particle-SDK
   - RealmSwift
 
 SPEC CHECKSUMS:
-  AFNetworking: 5e0e199f73d8626b11e79750991f5d173d1f8b67
-  HCKalmanFilter: 50cfd1f336886e11a7c48bc4ac2953df62c49128
+  AFNetworking: 8ac6017b94ea105479f7776e5288e48ae9c59bb4
+  HCKalmanFilter: e44b0885101e68f5e1ffefa29efab12c65c301d6
   Particle-SDK: d08e4a9e42c927bd997cd4817e5a01894ace4187
-  Realm: 6f23fd1f178a09342eac21bfa7c2bf4312a7a180
-  RealmSwift: 695393add1b8f9d5fa75dd16e6355cf3935f71e2
+  Realm: 09513d7c054678d65cd02ce09871f805b0d758ac
+  RealmSwift: e868fee9b10e5490ad94b6b6ecd9027944da1824
+  Surge: 1f0286bc5f0fe4283f3455479895bf85c7ef7760
 
-PODFILE CHECKSUM: 1e777dd1a5644dda1c3249dbc6f1f3dc5151e608
+PODFILE CHECKSUM: 8ea4045e62d5d23ed1322b2bd4f180f6c2000f3a
 
-COCOAPODS: 1.3.1
+COCOAPODS: 1.4.0

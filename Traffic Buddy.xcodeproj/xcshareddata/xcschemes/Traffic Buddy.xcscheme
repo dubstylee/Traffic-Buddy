@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0910"
+   LastUpgradeVersion = "0920"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "0E29B1D5EE75EDF195092B64653AAB9E"
+               BlueprintIdentifier = "3C0B2B12BE778D277F7473A4489615E3"
                BuildableName = "Pods_Traffic_Buddy.framework"
                BlueprintName = "Pods-Traffic Buddy"
                ReferencedContainer = "container:Pods/Pods.xcodeproj">

@@ -1,6 +1,6 @@
 language: objective-c
 xcode_workspace: "Traffic Buddy.xcworkspace"
 xcode_scheme: "Traffic Buddy"
-osx_image: xcode9
+osx_image: xcode9.2
 
 script: xcodebuild clean && xcodebuild build -workspace "Traffic Buddy.xcworkspace" -scheme "Traffic Buddy" -allowProvisioningUpdates -sdk iphonesimulator ONLY_ACTIVE_ARCH=NO

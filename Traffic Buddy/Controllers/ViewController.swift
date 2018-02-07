@@ -14,6 +14,8 @@ import Realm
 import RealmSwift
 import UIKit
 import HCKalmanFilter
+import LoginWithAmazon
+
 
 class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate {
     var nearIntersection = false

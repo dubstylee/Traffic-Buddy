@@ -8,7 +8,9 @@
 
 import AudioToolbox
 import CoreLocation
+import CoreMotion
 import MapKit
+import MessageUI
 import Particle_SDK
 import Realm
 import RealmSwift
@@ -17,7 +19,7 @@ import HCKalmanFilter
 import LoginWithAmazon
 
 
-class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate {
+class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate, MFMailComposeViewControllerDelegate {
     var nearIntersection = false
     let locationManager = CLLocationManager()
     let distanceThreshold = 200.0 // 1320.0 == quarter mile
@@ -31,6 +33,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     var polling: Bool = false
     var nearestIntersection: CLLocation?
     var lastLocation: CLLocation?
+    var readings = [String]()
+    fileprivate let motionManager = CMMotionManager()
     
     @IBOutlet var mainBackground: UIView!
     @IBOutlet weak var infoLabel: UILabel!
@@ -38,11 +42,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
     @IBOutlet weak var speedInstantLabel: UILabel!
     @IBOutlet weak var mapView: MKMapView!
+    @IBOutlet weak var recordSensors: UIButton!
     @IBOutlet weak var startButton: UIButton!
     @IBOutlet weak var relayStateView: UIView!
+    @IBOutlet weak var textView: UITextView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         self.relayStateView.layer.borderColor = UIColor.black.cgColor
         self.relayStateView.layer.borderWidth = 1.0
         self.locationManager.requestAlwaysAuthorization()
@@ -73,6 +80,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
         initRealm()
         setupMapView()
+        //startAccelerometerUpdates()
         
         if ParticleCloud.sharedInstance().injectSessionAccessToken(token!) {
             infoLabel.text = "session active"
@@ -80,6 +88,74 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         } else {
             infoLabel.text = "bad token"
         }
+    }
+    
+    /**
+     *  Configure the raw accelerometer data callback.
+     */
+    fileprivate func startAccelerometerUpdates() {
+        textView.text = ""
+        if motionManager.isAccelerometerAvailable {
+            motionManager.accelerometerUpdateInterval = 0.1
+            motionManager.startAccelerometerUpdates(to: OperationQueue.main) { (accelerometerData, error) in
+                self.report(acceleration: accelerometerData?.acceleration, inSection: .rawAccelerometerData)
+                self.log(error: error, forSensor: .accelerometer)
+            }
+        }
+    }
+    
+    fileprivate func stopAccelerometerUpdates() {
+        if motionManager.isAccelerometerAvailable {
+            motionManager.stopAccelerometerUpdates()
+        }
+    }
+    
+    /**
+     Sets acceleration data values to a specified `DataTableSection`.
+     
+     - parameter acceleration: A `CMAcceleration` holding the values to set.
+     - parameter section:      Section these values need to be applied to.
+     */
+    internal func report(acceleration: CMAcceleration?, inSection section: DataTableSection) {
+        let xString = acceleration?.x != nil ? String(format: "%.2f", arguments: [acceleration!.x]): "?"
+        let yString = acceleration?.y != nil ? String(format: "%.2f", arguments: [acceleration!.y]): "?"
+        let zString = acceleration?.z != nil ? String(format: "%.2f", arguments: [acceleration!.z]): "?"
+        
+        let text = "\(NSDate())\(xString),\(yString),\(zString)"
+        readings.append(text)
+        textView.text = textView.text + text + "\n"
+        //let bottom = NSMakeRange(textView.text.count - 1, 1)
+        //textView.scrollRangeToVisible(bottom)
+        //display(value: acceleration?.x, units: units, maxValue: 3)
+        //display(value: acceleration?.y, units: units, maxValue: 3)
+        //display(value: acceleration?.z, units: units, maxValue: 3)
+    }
+    
+    /**
+     Logs an error in a consistent format.
+     
+     - parameter error:  Error value.
+     - parameter sensor: `DeviceSensor` that triggered the error.
+     */
+    fileprivate func log(error: Error?, forSensor sensor: DeviceSensor) {
+        guard let error = error else { return }
+        
+        NSLog("Error reading data from \(sensor.description): \n \(error) \n")
+    }
+    
+    /**
+     Sets the value to a specific section and cell in the `UITableView`.
+     
+     - parameter value:     Value to be set. If no value is provided (e.g. we use `nil`), we set `?`.
+     - parameter units:     String containing units of the value.
+     - parameter minValue:  Minimum value, used for highlighting value changes with color. Default is 0.
+     - parameter minValue:  Maximum value, used for highlighting value changes with color. Default it 0.
+     */
+    fileprivate func display(value: Double? = nil, units: String, minValue: Double = 0, maxValue: Double = 0) {
+        let valueString = value != nil ? String(format: "%.2f", arguments: [value!]) : "?"
+        
+        let text = "\(valueString) \(units)"
+        textView.text = textView.text + text + "\n"
     }
     
     let regionRadius: CLLocationDistance = 1000
@@ -359,6 +435,78 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             startButton.setTitle("Start", for: .normal)
             //mainBackground.backgroundColor = UIColor.white
             polling = false
+        }
+    }
+    
+    func exportCsv() {
+        let fileName = "accelerometer.csv"
+        let path = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        
+        var csvText = "Date,x,y,z\n"
+        let count = readings.count
+        
+        if count > 0 {
+            for reading in readings {
+                let newLine = "\(reading)\n"
+                csvText.append(newLine)
+            }
+            
+            do {
+                try csvText.write(to: path!, atomically: true, encoding: String.Encoding.utf8)
+                
+                /*let vc = UIActivityViewController(activityItems: [path!], applicationActivities: [])
+                vc.excludedActivityTypes = [
+                    UIActivityType.assignToContact,
+                    UIActivityType.saveToCameraRoll,
+                    UIActivityType.postToFlickr,
+                    UIActivityType.postToVimeo,
+                    UIActivityType.postToTencentWeibo,
+                    UIActivityType.postToTwitter,
+                    UIActivityType.postToFacebook,
+                    UIActivityType.openInIBooks
+                ]*/
+                
+                if MFMailComposeViewController.canSendMail() {
+                    let emailController = MFMailComposeViewController()
+                    emailController.mailComposeDelegate = self
+                    emailController.setToRecipients([])
+                    emailController.setSubject("Accelerometer data")
+                    emailController.setMessageBody("readings from accelerometer", isHTML: false)
+                    
+                    // TODO: attach file
+                    if let data = NSData(contentsOfFile: (path?.relativeString)!) {
+                        emailController.addAttachmentData(data as Data, mimeType: "text/csv", fileName: "accelerometer.csv")
+
+                    }
+                    
+                    present(emailController, animated: true, completion: nil)
+                }
+                
+                //present(vc, animated: true, completion: nil)
+            } catch {
+                print("Failed to create file")
+                print("\(error)")
+            }
+        } else {
+            //showErrorAlert("Error", msg: "There is no data to export")
+        }
+    }
+    
+    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith: MFMailComposeResult, error: Error?) {
+        controller.dismiss(animated: true, completion: nil)
+    }
+    
+    @IBAction func recordButton(_ sender: Any) {
+        if recordSensors.title(for: .normal) == "record" {
+            startAccelerometerUpdates()
+            recordSensors.setTitle("stop", for: .normal)
+        } else if recordSensors.title(for: .normal) == "stop" {
+            stopAccelerometerUpdates()
+            recordSensors.setTitle("send", for: .normal)
+        } else {
+            exportCsv()
+            // e-mail csv file
+            recordSensors.setTitle("record", for: .normal)
         }
     }
     

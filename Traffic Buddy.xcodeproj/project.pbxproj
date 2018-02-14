@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		7D2618722DD5605EBCB772D7 /* Pods_Traffic_Buddy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DD9031CDFC948AE5D6D829E /* Pods_Traffic_Buddy.framework */; };
+		853648472033BB76008C4BE1 /* MotionInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853648452033BB75008C4BE1 /* MotionInfoViewController.swift */; };
+		853648482033BB76008C4BE1 /* MotionInfoViewController+SettingData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853648462033BB75008C4BE1 /* MotionInfoViewController+SettingData.swift */; };
+		8536484A2033BB7E008C4BE1 /* MotionInfoEnums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853648492033BB7E008C4BE1 /* MotionInfoEnums.swift */; };
 		85A2C3AB202A8868008BDFF6 /* LoginWithAmazon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85A2C3AA202A8868008BDFF6 /* LoginWithAmazon.framework */; };
 		85A2C3AD202A88B0008BDFF6 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85A2C3AC202A88B0008BDFF6 /* Security.framework */; };
 		85A2C3AF202A88BF008BDFF6 /* SafariServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85A2C3AE202A88BF008BDFF6 /* SafariServices.framework */; };
@@ -25,6 +28,9 @@
 /* Begin PBXFileReference section */
 		15176B35FACD163915569F1B /* Pods-Traffic Buddy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Traffic Buddy.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy.debug.xcconfig"; sourceTree = "<group>"; };
 		232EF00B66F7DDBB3F765D36 /* Pods-Traffic Buddy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Traffic Buddy.release.xcconfig"; path = "Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy.release.xcconfig"; sourceTree = "<group>"; };
+		853648452033BB75008C4BE1 /* MotionInfoViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MotionInfoViewController.swift; sourceTree = "<group>"; };
+		853648462033BB75008C4BE1 /* MotionInfoViewController+SettingData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "MotionInfoViewController+SettingData.swift"; sourceTree = "<group>"; };
+		853648492033BB7E008C4BE1 /* MotionInfoEnums.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MotionInfoEnums.swift; sourceTree = "<group>"; };
 		85A2C3AA202A8868008BDFF6 /* LoginWithAmazon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = LoginWithAmazon.framework; sourceTree = "<group>"; };
 		85A2C3AC202A88B0008BDFF6 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		85A2C3AE202A88BF008BDFF6 /* SafariServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SafariServices.framework; path = System/Library/Frameworks/SafariServices.framework; sourceTree = SDKROOT; };
@@ -130,6 +136,9 @@
 		D3A73C3E1F92997200E74766 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				853648492033BB7E008C4BE1 /* MotionInfoEnums.swift */,
+				853648452033BB75008C4BE1 /* MotionInfoViewController.swift */,
+				853648462033BB75008C4BE1 /* MotionInfoViewController+SettingData.swift */,
 				D361D0D61F81EB2E0060F25A /* AppDelegate.swift */,
 				D361D0D81F81EB2E0060F25A /* ViewController.swift */,
 			);
@@ -283,9 +292,12 @@
 			files = (
 				D361D0EA1F81EC120060F25A /* Intersection.swift in Sources */,
 				D34D67101FD5161C003E1CEB /* Speedometer.swift in Sources */,
+				8536484A2033BB7E008C4BE1 /* MotionInfoEnums.swift in Sources */,
+				853648472033BB76008C4BE1 /* MotionInfoViewController.swift in Sources */,
 				D30D4AA71FA6A812004EC057 /* UserLocation.swift in Sources */,
 				D361D0D91F81EB2E0060F25A /* ViewController.swift in Sources */,
 				D361D0D71F81EB2E0060F25A /* AppDelegate.swift in Sources */,
+				853648482033BB76008C4BE1 /* MotionInfoViewController+SettingData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

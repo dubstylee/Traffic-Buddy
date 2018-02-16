@@ -33,7 +33,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     var polling: Bool = false
     var nearestIntersection: CLLocation?
     var lastLocation: CLLocation?
-    var readings = [String]()
+    var accelerometerReadings = [String]()
+    var gyroscopeReadings = [String]()
     fileprivate let motionManager = CMMotionManager()
     
     @IBOutlet var mainBackground: UIView!
@@ -98,15 +99,34 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         if motionManager.isAccelerometerAvailable {
             motionManager.accelerometerUpdateInterval = 0.1
             motionManager.startAccelerometerUpdates(to: OperationQueue.main) { (accelerometerData, error) in
-                self.report(acceleration: accelerometerData?.acceleration, inSection: .rawAccelerometerData)
+                self.report(acceleration: accelerometerData?.acceleration)
                 self.log(error: error, forSensor: .accelerometer)
             }
         }
     }
     
+    /**
+     *  Configure the raw gyroscope data callback.
+     */
+    fileprivate func startGyroUpdates() {
+        if motionManager.isGyroAvailable {
+            motionManager.gyroUpdateInterval = 0.1
+            motionManager.startGyroUpdates(to: OperationQueue.main) { (gyroData, error) in
+                self.report(rotationRate: gyroData?.rotationRate)
+                self.log(error: error, forSensor: .gyro)
+            }
+        }
+    }
+    
     fileprivate func stopAccelerometerUpdates() {
-        if motionManager.isAccelerometerAvailable {
+        if motionManager.isAccelerometerActive {
             motionManager.stopAccelerometerUpdates()
+        }
+    }
+    
+    fileprivate func stopGyroUpdates() {
+        if motionManager.isGyroActive {
+            motionManager.stopGyroUpdates()
         }
     }
     
@@ -116,19 +136,45 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
      - parameter acceleration: A `CMAcceleration` holding the values to set.
      - parameter section:      Section these values need to be applied to.
      */
-    internal func report(acceleration: CMAcceleration?, inSection section: DataTableSection) {
+    internal func report(acceleration: CMAcceleration?) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
+
         let xString = acceleration?.x != nil ? String(format: "%.2f", arguments: [acceleration!.x]): "?"
         let yString = acceleration?.y != nil ? String(format: "%.2f", arguments: [acceleration!.y]): "?"
         let zString = acceleration?.z != nil ? String(format: "%.2f", arguments: [acceleration!.z]): "?"
         
-        let text = "\(NSDate())\(xString),\(yString),\(zString)"
-        readings.append(text)
+        let text = "\(formatter.string(from: NSDate() as Date)),a,\(xString),\(yString),\(zString)"
+        accelerometerReadings.append(text)
         textView.text = textView.text + text + "\n"
         //let bottom = NSMakeRange(textView.text.count - 1, 1)
         //textView.scrollRangeToVisible(bottom)
         //display(value: acceleration?.x, units: units, maxValue: 3)
         //display(value: acceleration?.y, units: units, maxValue: 3)
         //display(value: acceleration?.z, units: units, maxValue: 3)
+    }
+    
+    /**
+     Sets rotation rate data values to a specified `DataTableSection`.
+     
+     - parameter rotationRate: A `CMRotationRate` holding the values to set.
+     - parameter section:      Section these values need to be applied to.
+     */
+    internal func report(rotationRate: CMRotationRate?) {
+        //let units = "rad/s"
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
+
+        let xString = rotationRate?.x != nil ? String(format: "%.2f", arguments: [rotationRate!.x]): "?"
+        let yString = rotationRate?.y != nil ? String(format: "%.2f", arguments: [rotationRate!.y]): "?"
+        let zString = rotationRate?.z != nil ? String(format: "%.2f", arguments: [rotationRate!.z]): "?"
+        
+        let text = "\(formatter.string(from: NSDate() as Date)),g,\(xString),\(yString),\(zString)"
+        gyroscopeReadings.append(text)
+        textView.text = textView.text + text + "\n"
+        //display(value: rotationRate?.x, forRow: .axisX, inSection: section, units: units, maxValue: 10)
+        //display(value: rotationRate?.y, forRow: .axisY, inSection: section, units: units, maxValue: 10)
+        //display(value: rotationRate?.z, forRow: .axisZ, inSection: section, units: units, maxValue: 10)
     }
     
     /**
@@ -141,21 +187,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         guard let error = error else { return }
         
         NSLog("Error reading data from \(sensor.description): \n \(error) \n")
-    }
-    
-    /**
-     Sets the value to a specific section and cell in the `UITableView`.
-     
-     - parameter value:     Value to be set. If no value is provided (e.g. we use `nil`), we set `?`.
-     - parameter units:     String containing units of the value.
-     - parameter minValue:  Minimum value, used for highlighting value changes with color. Default is 0.
-     - parameter minValue:  Maximum value, used for highlighting value changes with color. Default it 0.
-     */
-    fileprivate func display(value: Double? = nil, units: String, minValue: Double = 0, maxValue: Double = 0) {
-        let valueString = value != nil ? String(format: "%.2f", arguments: [value!]) : "?"
-        
-        let text = "\(valueString) \(units)"
-        textView.text = textView.text + text + "\n"
     }
     
     let regionRadius: CLLocationDistance = 1000
@@ -442,11 +473,16 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         let fileName = "accelerometer.csv"
         let path = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
         
-        var csvText = "Date,x,y,z\n"
-        let count = readings.count
+        var csvText = "Date,Type,x,y,z\n"
+        let count = accelerometerReadings.count
         
         if count > 0 {
-            for reading in readings {
+            for reading in accelerometerReadings {
+                let newLine = "\(reading)\n"
+                csvText.append(newLine)
+            }
+            
+            for reading in gyroscopeReadings {
                 let newLine = "\(reading)\n"
                 csvText.append(newLine)
             }
@@ -469,13 +505,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 if MFMailComposeViewController.canSendMail() {
                     let emailController = MFMailComposeViewController()
                     emailController.mailComposeDelegate = self
-                    emailController.setToRecipients([])
+                    emailController.setToRecipients([""])
                     emailController.setSubject("Accelerometer data")
                     emailController.setMessageBody("readings from accelerometer", isHTML: false)
                     
                     // TODO: attach file
-                    if let data = NSData(contentsOfFile: (path?.relativeString)!) {
-                        emailController.addAttachmentData(data as Data, mimeType: "text/csv", fileName: "accelerometer.csv")
+                    if let data = NSData(contentsOfFile: "\(NSTemporaryDirectory())\(fileName)") {
+                        emailController.addAttachmentData(data as Data, mimeType: "text/csv", fileName: fileName)
 
                     }
                     
@@ -499,9 +535,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     @IBAction func recordButton(_ sender: Any) {
         if recordSensors.title(for: .normal) == "record" {
             startAccelerometerUpdates()
+            startGyroUpdates()
             recordSensors.setTitle("stop", for: .normal)
         } else if recordSensors.title(for: .normal) == "stop" {
             stopAccelerometerUpdates()
+            stopGyroUpdates()
             recordSensors.setTitle("send", for: .normal)
         } else {
             exportCsv()

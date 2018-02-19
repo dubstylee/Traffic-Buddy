@@ -36,6 +36,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     var accelerometerReadings = [String]()
     var gyroscopeReadings = [String]()
     fileprivate let motionManager = CMMotionManager()
+    var timer: Timer?
+    var pause: Bool = false
     
     @IBOutlet var mainBackground: UIView!
     @IBOutlet weak var infoLabel: UILabel!
@@ -51,6 +53,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        self.textView.text = ""
+        self.textView.layoutManager.allowsNonContiguousLayout = false
         self.relayStateView.layer.borderColor = UIColor.black.cgColor
         self.relayStateView.layer.borderWidth = 1.0
         self.locationManager.requestAlwaysAuthorization()
@@ -89,6 +93,15 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         } else {
             infoLabel.text = "bad token"
         }
+        
+        self.updateTextView(text: "application loaded successfully")
+    }
+    
+    
+    @objc func update() {
+        // do what should happen when timer triggers an event
+        //self.updateTextView(text: "timer")
+        pause = false
     }
     
     /**
@@ -97,7 +110,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     fileprivate func startAccelerometerUpdates() {
         textView.text = ""
         if motionManager.isAccelerometerAvailable {
-            motionManager.accelerometerUpdateInterval = 0.1
+            motionManager.accelerometerUpdateInterval = 0.2
             motionManager.startAccelerometerUpdates(to: OperationQueue.main) { (accelerometerData, error) in
                 self.report(acceleration: accelerometerData?.acceleration)
                 self.log(error: error, forSensor: .accelerometer)
@@ -110,7 +123,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
      */
     fileprivate func startGyroUpdates() {
         if motionManager.isGyroAvailable {
-            motionManager.gyroUpdateInterval = 0.1
+            motionManager.gyroUpdateInterval = 0.2
             motionManager.startGyroUpdates(to: OperationQueue.main) { (gyroData, error) in
                 self.report(rotationRate: gyroData?.rotationRate)
                 self.log(error: error, forSensor: .gyro)
@@ -146,12 +159,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         
         let text = "\(formatter.string(from: NSDate() as Date)),a,\(xString),\(yString),\(zString)"
         accelerometerReadings.append(text)
-        textView.text = textView.text + text + "\n"
-        //let bottom = NSMakeRange(textView.text.count - 1, 1)
-        //textView.scrollRangeToVisible(bottom)
-        //display(value: acceleration?.x, units: units, maxValue: 3)
-        //display(value: acceleration?.y, units: units, maxValue: 3)
-        //display(value: acceleration?.z, units: units, maxValue: 3)
     }
     
     /**
@@ -171,10 +178,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         
         let text = "\(formatter.string(from: NSDate() as Date)),g,\(xString),\(yString),\(zString)"
         gyroscopeReadings.append(text)
-        textView.text = textView.text + text + "\n"
-        //display(value: rotationRate?.x, forRow: .axisX, inSection: section, units: units, maxValue: 10)
-        //display(value: rotationRate?.y, forRow: .axisY, inSection: section, units: units, maxValue: 10)
-        //display(value: rotationRate?.z, forRow: .axisZ, inSection: section, units: units, maxValue: 10)
     }
     
     /**
@@ -187,6 +190,19 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         guard let error = error else { return }
         
         NSLog("Error reading data from \(sensor.description): \n \(error) \n")
+    }
+    
+    /**
+     Append the text to the textView, with the current date/time.
+     */
+    internal func updateTextView(text: String) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
+
+        textView.text = textView.text + "[\(formatter.string(from: NSDate() as Date))] \(text)\n"
+        
+        let bottom = NSMakeRange(textView.text.count - 1, 1)
+        textView.scrollRangeToVisible(bottom)
     }
     
     let regionRadius: CLLocationDistance = 1000
@@ -343,7 +359,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         */
         lastLocation = myLocation
         
-        displayClosestIntersection()
+        if !pause {
+            displayClosestIntersection()
+
+        }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -368,10 +387,16 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 
                 if dist < distanceThreshold && polling {
                     // auto-poll server within quarter mile
-                    //pollServer()
-                    if myPhoton != nil {
+                    if myPhoton != nil && !pause {
                         //readLedState()
-                        readLoopState()
+                        readLoopState(silent: true)
+                        // only auto-poll at most every 3 seconds
+                        Timer.scheduledTimer(timeInterval: 3,
+                                             target: self,
+                                             selector: #selector(self.update),
+                                             userInfo: nil,
+                                             repeats: false)
+                        pause = true
                     }
                     
                     // if the user is not already near an intersection, vibrate to notify
@@ -421,10 +446,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         })
     }
     
-    func readLoopState() {
+    func readLoopState(silent: Bool) {
         myPhoton!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
             if let _ = error {
                 self.infoLabel.text = "failed reading loop status from device"
+                if (!silent) {
+                    self.updateTextView(text: "failed reading loop state from device")
+                }
             }
             else {
                 if let status = result as? Int { //String {
@@ -435,6 +463,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                         self.relayStateView.backgroundColor = UIColor.red
                     }
                     self.infoLabel.text = "loop is \(status)"
+                    if (!silent) {
+                        self.updateTextView(text: "loop is \(status)")
+                    }
                 }
             }
         })
@@ -454,18 +485,23 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
 
     @IBAction func pollServerButton(_ sender: Any) {
         //readLedState()
-        readLoopState()
+        updateTextView(text: "polling server")
+        readLoopState(silent: false)
     }
     
     @IBAction func pushStartButton(_ sender: Any) {
-        if startButton.titleLabel?.text == "Start" {
-            startButton.setTitle("Stop", for: .normal)
+        if startButton.titleLabel?.text == "Start Trip" {
+            startButton.setTitle("Stop Trip", for: .normal)
             polling = true
+            self.updateTextView(text: "starting bicycle trip")
         }
-        else if startButton.titleLabel?.text == "Stop" {
-            startButton.setTitle("Start", for: .normal)
+        else if startButton.titleLabel?.text == "Stop Trip" {
+            startButton.setTitle("Start Trip", for: .normal)
             //mainBackground.backgroundColor = UIColor.white
             polling = false
+            self.updateTextView(text: "stopping bicycle trip")
+            timer?.invalidate()
+            pause = false
         }
     }
     
@@ -505,9 +541,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 if MFMailComposeViewController.canSendMail() {
                     let emailController = MFMailComposeViewController()
                     emailController.mailComposeDelegate = self
-                    emailController.setToRecipients([""])
+                    emailController.setToRecipients(["bwilli11@uoregon.edu"])
                     emailController.setSubject("Accelerometer data")
-                    emailController.setMessageBody("readings from accelerometer", isHTML: false)
+                    emailController.setMessageBody("readings from accelerometer and gyro", isHTML: false)
                     
                     // TODO: attach file
                     if let data = NSData(contentsOfFile: "\(NSTemporaryDirectory())\(fileName)") {
@@ -536,23 +572,31 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         if recordSensors.title(for: .normal) == "record" {
             startAccelerometerUpdates()
             startGyroUpdates()
+            recordSensors.setImage(UIImage(named: "stop-30px.png"), for: .normal)
             recordSensors.setTitle("stop", for: .normal)
         } else if recordSensors.title(for: .normal) == "stop" {
             stopAccelerometerUpdates()
             stopGyroUpdates()
+            recordSensors.setImage(UIImage(named: "email-30px.png"), for: .normal)
             recordSensors.setTitle("send", for: .normal)
         } else {
             exportCsv()
             // e-mail csv file
+            recordSensors.setImage(UIImage(named: "record-30px.png"), for: .normal)
             recordSensors.setTitle("record", for: .normal)
         }
     }
     
     @IBAction func triggerRelayButton(_ sender: Any) {
         let relay_number = "1"
+        self.updateTextView(text: "triggering relay #\(relay_number)")
+
         let task = myPhoton!.callFunction("relay_on", withArguments: [relay_number]) { (resultCode : NSNumber?, error : Error?) -> Void in
             if (error == nil) {
-                self.infoLabel.text = "relay \(relay_number) on"
+                self.readLoopState(silent: false)
+            }
+            else {
+                self.updateTextView(text: "error triggering relay")
             }
         }
         let bytes : Int64 = task.countOfBytesExpectedToReceive

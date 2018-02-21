@@ -433,6 +433,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                     // if the user is not already near an intersection, vibrate to notify
                     if dist < 50.0 && !nearIntersection {
                         nearIntersection = true
+                        triggerRelay(relayNumber: "1")
                         AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
                         
                     }
@@ -444,7 +445,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                     }
                 } else {
                     // polling = false
-                    mainBackground.backgroundColor = UIColor.white
+                    self.relayStateView.backgroundColor = UIColor.white
                 }
 
                 for i in (0...intersections.count-1) {
@@ -487,14 +488,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 }
             }
             else {
-                if let status = result as? Int { //String {
-                    if status == 1 { //"on" {
+                if let status = result as? Int {
+                    if status == 1 {
                         self.relayStateView.backgroundColor = UIColor.green
                     }
                     else {
                         self.relayStateView.backgroundColor = UIColor.red
                     }
-                    self.infoLabel.text = "loop is \(status)"
+                    
                     if (!silent) {
                         self.updateTextView(text: "loop is \(status)")
                     }
@@ -535,7 +536,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
         else if startButton.titleLabel?.text == "Stop Trip" {
             startButton.setTitle("Start Trip", for: .normal)
-            mainBackground.backgroundColor = UIColor.white
+            relayStateView.backgroundColor = UIColor.white
             autoPollTimer?.invalidate()
             locationTimer?.invalidate()
             pollServerTimer?.invalidate()
@@ -608,6 +609,23 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         controller.dismiss(animated: true, completion: nil)
     }
     
+    func triggerRelay(relayNumber: String) {
+        self.updateTextView(text: "triggering relay #\(relayNumber)")
+        
+        let task = myPhoton!.callFunction("relay_on", withArguments: [relayNumber]) { (resultCode : NSNumber?, error : Error?) -> Void in
+            if (error == nil) {
+                self.readLoopState(silent: false)
+            }
+            else {
+                self.updateTextView(text: "error triggering relay")
+            }
+        }
+        let bytes : Int64 = task.countOfBytesExpectedToReceive
+        if bytes > 0 {
+            // ..do something with bytesToReceive
+        }
+    }
+    
     @IBAction func recordButton(_ sender: Any) {
         if recordSensors.title(for: .normal) == "record" {
             startMotionUpdates()
@@ -626,21 +644,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
     
     @IBAction func triggerRelayButton(_ sender: Any) {
-        let relay_number = "1"
-        self.updateTextView(text: "triggering relay #\(relay_number)")
-
-        let task = myPhoton!.callFunction("relay_on", withArguments: [relay_number]) { (resultCode : NSNumber?, error : Error?) -> Void in
-            if (error == nil) {
-                self.readLoopState(silent: false)
-            }
-            else {
-                self.updateTextView(text: "error triggering relay")
-            }
-        }
-        let bytes : Int64 = task.countOfBytesExpectedToReceive
-        if bytes > 0 {
-            // ..do something with bytesToReceive
-        }
+        let number = "1"
+        triggerRelay(relayNumber: number)
     }
 }
 

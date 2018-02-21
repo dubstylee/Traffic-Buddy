@@ -434,6 +434,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                     if dist < 50.0 && !nearIntersection {
                         nearIntersection = true
                         AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
+                        
                     }
                     
                     // if the user was previously near an intersection, vibrate to notify

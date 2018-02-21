@@ -20,6 +20,8 @@ import LoginWithAmazon
 
 
 class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate, MFMailComposeViewControllerDelegate {
+    let kMotionUpdateInterval = 0.2
+
     var nearIntersection = false
     let locationManager = CLLocationManager()
     let distanceThreshold = 200.0 // 1320.0 == quarter mile
@@ -36,9 +38,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     var accelerometerReadings = [String]()
     var gyroscopeReadings = [String]()
     fileprivate let motionManager = CMMotionManager()
-    var timer: Timer?
     var pause: Bool = false
+    var autoPollTimer: Timer?
+    var locationTimer: Timer?
+    var pollServerTimer: Timer?
+    var initialAttitude: CMAttitude?
     
+    @IBOutlet weak var pollServerButton: UIButton!
     @IBOutlet var mainBackground: UIView!
     @IBOutlet weak var infoLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
@@ -59,7 +65,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         self.relayStateView.layer.borderWidth = 1.0
         self.locationManager.requestAlwaysAuthorization()
         self.locationManager.requestWhenInUseAuthorization()
-        
+
+        //if motionManager.isDeviceMotionAvailable {
+        //    self.initialAttitude = motionManager.deviceMotion!.attitude
+        //}
+
         if let path = Bundle.main.path(forResource: "particle", ofType: "conf") {
             do {
                 token = try String(contentsOfFile: path, encoding: String.Encoding.utf8)
@@ -76,8 +86,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             locationManager.delegate = self
             locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
             locationManager.distanceFilter = 0.5
-            // locationManager.showsBackgroundLocationIndicator = true
-            locationManager.startUpdatingLocation()
+            //locationManager.showsBackgroundLocationIndicator = true
+            //locationManager.startUpdatingLocation()
+
+            locationTimer = Timer.scheduledTimer(timeInterval: 2,
+                                                 target: self,
+                                                 selector: #selector(self.updateLocation),
+                                                 userInfo: nil,
+                                                 repeats: true)
         }
 
         if locationManager.location != nil {
@@ -85,7 +101,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
         initRealm()
         setupMapView()
-        //startAccelerometerUpdates()
         
         if ParticleCloud.sharedInstance().injectSessionAccessToken(token!) {
             infoLabel.text = "session active"
@@ -97,49 +112,61 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         self.updateTextView(text: "application loaded successfully")
     }
     
-    
-    @objc func update() {
-        // do what should happen when timer triggers an event
-        //self.updateTextView(text: "timer")
+    @objc func updateAutoPollPause() {
         pause = false
     }
+
+    @objc func updateLocation() {
+        locationManager.startUpdatingLocation()
+    }
     
+    @objc func updatePollServerButton() {
+        pollServerButton.isEnabled = true
+    }
+
     /**
-     *  Configure the raw accelerometer data callback.
+     *  Configure the sensor data callback.
      */
-    fileprivate func startAccelerometerUpdates() {
-        textView.text = ""
+    fileprivate func startMotionUpdates() {
         if motionManager.isAccelerometerAvailable {
-            motionManager.accelerometerUpdateInterval = 0.2
+            motionManager.accelerometerUpdateInterval = kMotionUpdateInterval
             motionManager.startAccelerometerUpdates(to: OperationQueue.main) { (accelerometerData, error) in
                 self.report(acceleration: accelerometerData?.acceleration)
                 self.log(error: error, forSensor: .accelerometer)
             }
         }
-    }
-    
-    /**
-     *  Configure the raw gyroscope data callback.
-     */
-    fileprivate func startGyroUpdates() {
+        
         if motionManager.isGyroAvailable {
-            motionManager.gyroUpdateInterval = 0.2
+            motionManager.gyroUpdateInterval = kMotionUpdateInterval
             motionManager.startGyroUpdates(to: OperationQueue.main) { (gyroData, error) in
                 self.report(rotationRate: gyroData?.rotationRate)
                 self.log(error: error, forSensor: .gyro)
             }
         }
-    }
-    
-    fileprivate func stopAccelerometerUpdates() {
-        if motionManager.isAccelerometerActive {
-            motionManager.stopAccelerometerUpdates()
+        
+        if motionManager.isDeviceMotionAvailable {
+            // deviceMotion combines accelerometer and gyroscope data
+            motionManager.deviceMotionUpdateInterval = kMotionUpdateInterval
+            motionManager.startDeviceMotionUpdates(to: OperationQueue.main) { (motionData, error) in
+                self.report(acceleration: motionData?.gravity)
+                self.report(acceleration: motionData?.userAcceleration)
+                self.report(rotationRate: motionData?.rotationRate)
+                self.log(error: error, forSensor: .deviceMotion)
+            }
         }
     }
     
-    fileprivate func stopGyroUpdates() {
+    fileprivate func stopMotionUpdates() {
+        if motionManager.isAccelerometerActive {
+            motionManager.stopAccelerometerUpdates()
+        }
+
         if motionManager.isGyroActive {
             motionManager.stopGyroUpdates()
+        }
+        
+        if motionManager.isDeviceMotionActive {
+            motionManager.stopDeviceMotionUpdates()
         }
     }
     
@@ -359,10 +386,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         */
         lastLocation = myLocation
         
+        if polling {
+            centerMapOnLocation(location: myLocation)
+        }
         if !pause {
             displayClosestIntersection()
-
         }
+        // stop updating location until next locationTimer tick
+        locationManager.stopUpdatingLocation()
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -391,11 +422,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                         //readLedState()
                         readLoopState(silent: true)
                         // only auto-poll at most every 3 seconds
-                        Timer.scheduledTimer(timeInterval: 3,
-                                             target: self,
-                                             selector: #selector(self.update),
-                                             userInfo: nil,
-                                             repeats: false)
+                        autoPollTimer = Timer.scheduledTimer(timeInterval: 3,
+                                                             target: self,
+                                                             selector: #selector(self.updateAutoPollPause),
+                                                             userInfo: nil,
+                                                             repeats: false)
                         pause = true
                     }
                     
@@ -411,7 +442,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                         AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
                     }
                 } else {
-                    polling = false
+                    // polling = false
                     mainBackground.backgroundColor = UIColor.white
                 }
 
@@ -483,10 +514,16 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
     }
 
-    @IBAction func pollServerButton(_ sender: Any) {
+    @IBAction func pollServerButtonClick(_ sender: Any) {
         //readLedState()
         updateTextView(text: "polling server")
         readLoopState(silent: false)
+        pollServerButton.isEnabled = false
+        pollServerTimer = Timer.scheduledTimer(timeInterval: 5,
+                                               target: self,
+                                               selector: #selector(self.updatePollServerButton),
+                                               userInfo: nil,
+                                               repeats: false)
     }
     
     @IBAction func pushStartButton(_ sender: Any) {
@@ -497,11 +534,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
         else if startButton.titleLabel?.text == "Stop Trip" {
             startButton.setTitle("Start Trip", for: .normal)
-            //mainBackground.backgroundColor = UIColor.white
+            mainBackground.backgroundColor = UIColor.white
+            autoPollTimer?.invalidate()
+            locationTimer?.invalidate()
+            pollServerTimer?.invalidate()
+            pause = false
             polling = false
             self.updateTextView(text: "stopping bicycle trip")
-            timer?.invalidate()
-            pause = false
         }
     }
     
@@ -570,18 +609,16 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     
     @IBAction func recordButton(_ sender: Any) {
         if recordSensors.title(for: .normal) == "record" {
-            startAccelerometerUpdates()
-            startGyroUpdates()
+            startMotionUpdates()
             recordSensors.setImage(UIImage(named: "stop-30px.png"), for: .normal)
             recordSensors.setTitle("stop", for: .normal)
         } else if recordSensors.title(for: .normal) == "stop" {
-            stopAccelerometerUpdates()
-            stopGyroUpdates()
+            stopMotionUpdates()
             recordSensors.setImage(UIImage(named: "email-30px.png"), for: .normal)
             recordSensors.setTitle("send", for: .normal)
         } else {
-            exportCsv()
             // e-mail csv file
+            exportCsv()
             recordSensors.setImage(UIImage(named: "record-30px.png"), for: .normal)
             recordSensors.setTitle("record", for: .normal)
         }

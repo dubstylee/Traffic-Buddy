@@ -24,6 +24,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             fileURL: Bundle.main.url(forResource: "locationhistory", withExtension: "realm"),
             readOnly: false)
         realm = try! Realm(configuration: config)*/
+        application.isIdleTimerDisabled = true
         return true
     }
 

@@ -81,8 +81,11 @@
                                 <state key="normal" title="Poll Server">
                                     <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 </state>
+                                <state key="disabled">
+                                    <color key="titleColor" white="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
                                 <connections>
-                                    <action selector="pollServerButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="vgU-PS-aAg"/>
+                                    <action selector="pollServerButtonClick:" destination="BYZ-38-t0r" eventType="touchUpInside" id="7Vb-U3-VEZ"/>
                                 </connections>
                             </button>
                             <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fga-4n-y47">
@@ -104,20 +107,12 @@
                                 </attributedString>
                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                             </textView>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" hasAttributedTitle="YES" translatesAutoresizingMaskIntoConstraints="NO" id="UZI-Mk-KAm">
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="UZI-Mk-KAm">
                                 <rect key="frame" x="16" y="236" width="30" height="30"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                <state key="normal" image="record-30px">
-                                    <attributedString key="attributedTitle">
-                                        <fragment content="record">
-                                            <attributes>
-                                                <font key="NSFont" metaFont="smallSystem"/>
-                                                <paragraphStyle key="NSParagraphStyle" alignment="natural" lineBreakMode="wordWrapping" baseWritingDirection="natural" tighteningFactorForTruncation="0.0"/>
-                                            </attributes>
-                                        </fragment>
-                                    </attributedString>
-                                </state>
+                                <fontDescription key="fontDescription" name=".AppleSystemUIFont" family=".AppleSystemUIFont" pointSize="11"/>
+                                <state key="normal" title="record" image="record-30px"/>
                                 <connections>
                                     <action selector="recordButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Nvy-vk-lFJ"/>
                                 </connections>
@@ -132,6 +127,7 @@
                         <outlet property="mainBackground" destination="8bC-Xf-vdC" id="GSL-Lj-snT"/>
                         <outlet property="mapView" destination="Zjm-Wz-sfH" id="jjD-mZ-IEU"/>
                         <outlet property="nearestIntersectionLabel" destination="xuT-zs-0Lk" id="IiQ-k6-gak"/>
+                        <outlet property="pollServerButton" destination="UBs-vp-fN6" id="avY-fK-gS7"/>
                         <outlet property="recordSensors" destination="UZI-Mk-KAm" id="9eO-8L-p0v"/>
                         <outlet property="relayStateView" destination="fga-4n-y47" id="ICF-DC-cjJ"/>
                         <outlet property="speedInstantLabel" destination="inz-n8-6qz" id="AAh-Bo-3WG"/>

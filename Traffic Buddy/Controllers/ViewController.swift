@@ -15,7 +15,7 @@ import Particle_SDK
 import Realm
 import RealmSwift
 import UIKit
-import HCKalmanFilter
+//import HCKalmanFilter
 import LoginWithAmazon
 
 
@@ -30,20 +30,23 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     var intersections: Results<Intersection>!
     var locationRealm: Realm?
     var token: String?
-    var hcKalmanFilter: HCKalmanAlgorithm?
-    var resetKalmanFilter: Bool = false
+    //var hcKalmanFilter: HCKalmanAlgorithm?
+    //var resetKalmanFilter: Bool = false
     var polling: Bool = false
     var nearestIntersection: CLLocation?
     var lastLocation: CLLocation?
     var accelerometerReadings = [String]()
     var gyroscopeReadings = [String]()
+    var motionReadings = [String]()
     fileprivate let motionManager = CMMotionManager()
+    let formatter = DateFormatter()
     var pause: Bool = false
     var autoPollTimer: Timer?
     var locationTimer: Timer?
     var pollServerTimer: Timer?
     var initialAttitude: CMAttitude?
     
+    @IBOutlet weak var triggerRelayButton: UIButton!
     @IBOutlet weak var pollServerButton: UIButton!
     @IBOutlet var mainBackground: UIView!
     @IBOutlet weak var infoLabel: UILabel!
@@ -59,16 +62,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.textView.text = ""
-        self.textView.layoutManager.allowsNonContiguousLayout = false
-        self.relayStateView.layer.borderColor = UIColor.black.cgColor
-        self.relayStateView.layer.borderWidth = 1.0
+        self.becomeFirstResponder()
+        self.formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
         self.locationManager.requestAlwaysAuthorization()
         self.locationManager.requestWhenInUseAuthorization()
-
-        //if motionManager.isDeviceMotionAvailable {
-        //    self.initialAttitude = motionManager.deviceMotion!.attitude
-        //}
+        self.relayStateView.layer.borderColor = UIColor.black.cgColor
+        self.relayStateView.layer.borderWidth = 1.0
+        self.textView.layoutManager.allowsNonContiguousLayout = false
+        self.textView.text = ""
 
         if let path = Bundle.main.path(forResource: "particle", ofType: "conf") {
             do {
@@ -82,10 +83,12 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
         
         if CLLocationManager.locationServicesEnabled() {
+            locationManager.activityType = CLActivityType.fitness
             locationManager.allowsBackgroundLocationUpdates = true
             locationManager.delegate = self
-            locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+            locationManager.desiredAccuracy = kCLLocationAccuracyBest
             locationManager.distanceFilter = 0.5
+            locationManager.pausesLocationUpdatesAutomatically = true
             //locationManager.showsBackgroundLocationIndicator = true
             //locationManager.startUpdatingLocation()
 
@@ -112,6 +115,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         self.updateTextView(text: "application loaded successfully")
     }
     
+    override var canBecomeFirstResponder: Bool {
+        return true
+    }
+    
     @objc func updateAutoPollPause() {
         pause = false
     }
@@ -128,30 +135,30 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
      *  Configure the sensor data callback.
      */
     fileprivate func startMotionUpdates() {
-        if motionManager.isAccelerometerAvailable {
-            motionManager.accelerometerUpdateInterval = kMotionUpdateInterval
-            motionManager.startAccelerometerUpdates(to: OperationQueue.main) { (accelerometerData, error) in
-                self.report(acceleration: accelerometerData?.acceleration)
-                self.log(error: error, forSensor: .accelerometer)
-            }
-        }
-        
-        if motionManager.isGyroAvailable {
-            motionManager.gyroUpdateInterval = kMotionUpdateInterval
-            motionManager.startGyroUpdates(to: OperationQueue.main) { (gyroData, error) in
-                self.report(rotationRate: gyroData?.rotationRate)
-                self.log(error: error, forSensor: .gyro)
-            }
-        }
-        
         if motionManager.isDeviceMotionAvailable {
             // deviceMotion combines accelerometer and gyroscope data
             motionManager.deviceMotionUpdateInterval = kMotionUpdateInterval
             motionManager.startDeviceMotionUpdates(to: OperationQueue.main) { (motionData, error) in
-                self.report(acceleration: motionData?.gravity)
-                self.report(acceleration: motionData?.userAcceleration)
-                self.report(rotationRate: motionData?.rotationRate)
+                self.report(motion: motionData)
                 self.log(error: error, forSensor: .deviceMotion)
+            }
+        }
+        else {
+            // only handle accelerometer and gyro separately if device motion is unavailable
+            if motionManager.isAccelerometerAvailable {
+                motionManager.accelerometerUpdateInterval = kMotionUpdateInterval
+                motionManager.startAccelerometerUpdates(to: OperationQueue.main) { (accelerometerData, error) in
+                    self.report(acceleration: accelerometerData?.acceleration)
+                    self.log(error: error, forSensor: .accelerometer)
+                }
+            }
+            
+            if motionManager.isGyroAvailable {
+                motionManager.gyroUpdateInterval = kMotionUpdateInterval
+                motionManager.startGyroUpdates(to: OperationQueue.main) { (gyroData, error) in
+                    self.report(rotationRate: gyroData?.rotationRate)
+                    self.log(error: error, forSensor: .gyro)
+                }
             }
         }
     }
@@ -171,15 +178,37 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
     
     /**
+     Report the device motion sensor data.
+     
+     - parameter motion: A `CMDeviceMotion` holding the sensor data to report.
+     */
+    internal func report(motion: CMDeviceMotion?) {
+        var xString = motion?.gravity.x != nil ? String(format: "%.2f", arguments: [(motion?.gravity.x)!]): "?"
+        var yString = motion?.gravity.y != nil ? String(format: "%.2f", arguments: [(motion?.gravity.y)!]): "?"
+        var zString = motion?.gravity.z != nil ? String(format: "%.2f", arguments: [(motion?.gravity.z)!]): "?"
+        var text = "\(formatter.string(from: NSDate() as Date)),y,\(xString),\(yString),\(zString)"
+        motionReadings.append(text)
+        
+        xString = motion?.userAcceleration.x != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.x)!]): "?"
+        yString = motion?.userAcceleration.y != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.y)!]): "?"
+        zString = motion?.userAcceleration.z != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.z)!]): "?"
+        text = "\(formatter.string(from: NSDate() as Date)),a,\(xString),\(yString),\(zString)"
+        motionReadings.append(text)
+
+        xString = motion?.rotationRate.x != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.x)!]): "?"
+        yString = motion?.rotationRate.y != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.y)!]): "?"
+        zString = motion?.rotationRate.z != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.z)!]): "?"
+        text = "\(formatter.string(from: NSDate() as Date)),g,\(xString),\(yString),\(zString)"
+        motionReadings.append(text)
+    }
+    
+    /**
      Sets acceleration data values to a specified `DataTableSection`.
      
      - parameter acceleration: A `CMAcceleration` holding the values to set.
      - parameter section:      Section these values need to be applied to.
      */
     internal func report(acceleration: CMAcceleration?) {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
-
         let xString = acceleration?.x != nil ? String(format: "%.2f", arguments: [acceleration!.x]): "?"
         let yString = acceleration?.y != nil ? String(format: "%.2f", arguments: [acceleration!.y]): "?"
         let zString = acceleration?.z != nil ? String(format: "%.2f", arguments: [acceleration!.z]): "?"
@@ -195,10 +224,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
      - parameter section:      Section these values need to be applied to.
      */
     internal func report(rotationRate: CMRotationRate?) {
-        //let units = "rad/s"
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
-
         let xString = rotationRate?.x != nil ? String(format: "%.2f", arguments: [rotationRate!.x]): "?"
         let yString = rotationRate?.y != nil ? String(format: "%.2f", arguments: [rotationRate!.y]): "?"
         let zString = rotationRate?.z != nil ? String(format: "%.2f", arguments: [rotationRate!.z]): "?"
@@ -217,6 +242,12 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         guard let error = error else { return }
         
         NSLog("Error reading data from \(sensor.description): \n \(error) \n")
+    }
+    
+    override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
+        if motion == .motionShake {
+            self.updateTextView(text: "shake gesture detected")
+        }
     }
     
     /**
@@ -251,7 +282,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                     for device in d {
                         if device.name == "beacon_2" {
                             self.myPhoton = device
-                            self.infoLabel.text = "found beacon_2"
+                            self.updateTextView(text: "found \(device.name!)")
+                            self.pollServerButton.isEnabled = true
+                            self.triggerRelayButton.isEnabled = true
                         }
                     }
                 }
@@ -298,7 +331,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             }
         }
         
-        infoLabel.text = "# intersections: \(intersections.count)"
+        //infoLabel.text = "# intersections: \(intersections.count)"
         /*let config = Realm.Configuration(
             fileURL: Bundle.main.url(forResource: "locationhistory", withExtension: "realm"),
             readOnly: false)
@@ -334,16 +367,16 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         let myLocation: CLLocation = locations.first!
 
-        if hcKalmanFilter == nil {
-            self.hcKalmanFilter = HCKalmanAlgorithm(initialLocation: myLocation)
-        }
-        else {
-            if let hcKalmanFilter = self.hcKalmanFilter {
-                if resetKalmanFilter == true {
-                    hcKalmanFilter.resetKalman(newStartLocation: myLocation)
-                    resetKalmanFilter = false
-                }
-                else {
+        //if hcKalmanFilter == nil {
+        //    self.hcKalmanFilter = HCKalmanAlgorithm(initialLocation: myLocation)
+        //}
+        //else {
+        //    if let hcKalmanFilter = self.hcKalmanFilter {
+        //        if resetKalmanFilter == true {
+        //            hcKalmanFilter.resetKalman(newStartLocation: myLocation)
+        //            resetKalmanFilter = false
+        //        }
+        //        else {
                     //print(myLocation.coordinate)
                     //let kalmanLocation = hcKalmanFilter.processState(currentLocation: myLocation)
                     //print(kalmanLocation.coordinate)
@@ -370,9 +403,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                     }
 
                     locationLabel.text = "\(latString) \(longString)"
-                }
-            }
-        }
+        //        }
+        //    }
+        //}
         var instantSpeed = myLocation.speed
         instantSpeed = max(instantSpeed, 0.0)
         speedInstantLabel.text = String(format: "Instant Speed: %.2f mph", (instantSpeed * metersPerSecToMilesPerHour))
@@ -462,8 +495,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     func readLedState() {
         myPhoton!.getVariable("led_state", completion: { (result:Any?, error:Error?) -> Void in
             if let _ = error {
-                self.relayStateView.backgroundColor = UIColor.gray
-                self.infoLabel.text = "failed reading led status from device"
+                // self.relayStateView.backgroundColor = UIColor.gray
+                self.updateTextView(text: "failed reading led status from device")
             }
             else {
                 if let status = result as? String {
@@ -473,7 +506,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                     else {
                         self.relayStateView.backgroundColor = UIColor.red
                     }
-                    self.infoLabel.text = "led is \(status)"
+                    self.updateTextView(text: "led is \(status)")
                 }
             }
         })
@@ -482,7 +515,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     func readLoopState(silent: Bool) {
         myPhoton!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
             if let _ = error {
-                self.infoLabel.text = "failed reading loop status from device"
                 if (!silent) {
                     self.updateTextView(text: "failed reading loop state from device")
                 }
@@ -507,7 +539,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     func toggleLedState() {
         let task = myPhoton!.callFunction("toggle_led", withArguments: nil) { (resultCode : NSNumber?, error : Error?) -> Void in
             if (error == nil) {
-                self.infoLabel.text = "toggle led successful"
+                self.updateTextView(text: "toggle led successful")
             }
         }
         let bytes : Int64 = task.countOfBytesExpectedToReceive
@@ -551,57 +583,70 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         let path = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
         
         var csvText = "Date,Type,x,y,z\n"
-        let count = accelerometerReadings.count
-        
-        if count > 0 {
-            for reading in accelerometerReadings {
-                let newLine = "\(reading)\n"
-                csvText.append(newLine)
-            }
+        if motionManager.isDeviceMotionAvailable {
+            let count = motionReadings.count
             
-            for reading in gyroscopeReadings {
-                let newLine = "\(reading)\n"
-                csvText.append(newLine)
+            if count > 0 {
+                for reading in motionReadings {
+                    let newLine = "\(reading)\n"
+                    csvText.append(newLine)
+                }
+            } else {
+                //showErrorAlert("Error", msg: "There is no data to export")
             }
+        }
+        else {
+            let count = accelerometerReadings.count
             
-            do {
-                try csvText.write(to: path!, atomically: true, encoding: String.Encoding.utf8)
-                
-                /*let vc = UIActivityViewController(activityItems: [path!], applicationActivities: [])
-                vc.excludedActivityTypes = [
-                    UIActivityType.assignToContact,
-                    UIActivityType.saveToCameraRoll,
-                    UIActivityType.postToFlickr,
-                    UIActivityType.postToVimeo,
-                    UIActivityType.postToTencentWeibo,
-                    UIActivityType.postToTwitter,
-                    UIActivityType.postToFacebook,
-                    UIActivityType.openInIBooks
-                ]*/
-                
-                if MFMailComposeViewController.canSendMail() {
-                    let emailController = MFMailComposeViewController()
-                    emailController.mailComposeDelegate = self
-                    emailController.setToRecipients(["bwilli11@uoregon.edu"])
-                    emailController.setSubject("Accelerometer data")
-                    emailController.setMessageBody("readings from accelerometer and gyro", isHTML: false)
-                    
-                    // TODO: attach file
-                    if let data = NSData(contentsOfFile: "\(NSTemporaryDirectory())\(fileName)") {
-                        emailController.addAttachmentData(data as Data, mimeType: "text/csv", fileName: fileName)
-
-                    }
-                    
-                    present(emailController, animated: true, completion: nil)
+            if count > 0 {
+                for reading in accelerometerReadings {
+                    let newLine = "\(reading)\n"
+                    csvText.append(newLine)
                 }
                 
-                //present(vc, animated: true, completion: nil)
-            } catch {
-                print("Failed to create file")
-                print("\(error)")
+                for reading in gyroscopeReadings {
+                    let newLine = "\(reading)\n"
+                    csvText.append(newLine)
+                }
+            } else {
+                //showErrorAlert("Error", msg: "There is no data to export")
             }
-        } else {
-            //showErrorAlert("Error", msg: "There is no data to export")
+        }
+
+        do {
+            try csvText.write(to: path!, atomically: true, encoding: String.Encoding.utf8)
+            
+            /*let vc = UIActivityViewController(activityItems: [path!], applicationActivities: [])
+             vc.excludedActivityTypes = [
+             UIActivityType.assignToContact,
+             UIActivityType.saveToCameraRoll,
+             UIActivityType.postToFlickr,
+             UIActivityType.postToVimeo,
+             UIActivityType.postToTencentWeibo,
+             UIActivityType.postToTwitter,
+             UIActivityType.postToFacebook,
+             UIActivityType.openInIBooks
+             ]*/
+            
+            if MFMailComposeViewController.canSendMail() {
+                let emailController = MFMailComposeViewController()
+                emailController.mailComposeDelegate = self
+                emailController.setToRecipients(["bwilli11@uoregon.edu"])
+                emailController.setSubject("Accelerometer data")
+                emailController.setMessageBody("readings from accelerometer and gyro", isHTML: false)
+                
+                if let data = NSData(contentsOfFile: "\(NSTemporaryDirectory())\(fileName)") {
+                    emailController.addAttachmentData(data as Data, mimeType: "text/csv", fileName: fileName)
+                    
+                }
+                
+                present(emailController, animated: true, completion: nil)
+            }
+            
+            //present(vc, animated: true, completion: nil)
+        } catch {
+            print("Failed to create file")
+            print("\(error)")
         }
     }
     
@@ -643,7 +688,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
     }
     
-    @IBAction func triggerRelayButton(_ sender: Any) {
+    @IBAction func triggerRelayButtonClick(_ sender: Any) {
         let number = "1"
         triggerRelay(relayNumber: number)
     }

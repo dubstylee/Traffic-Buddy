@@ -10,5 +10,5 @@ target 'Traffic Buddy' do
   pod 'AFNetworking', :inhibit_warnings => true
   pod 'RealmSwift'
   pod 'Particle-SDK'
-  pod 'HCKalmanFilter'
+  # pod 'HCKalmanFilter'
 end

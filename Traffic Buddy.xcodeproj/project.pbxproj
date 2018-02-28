@@ -8,12 +8,18 @@
 
 /* Begin PBXBuildFile section */
 		7D2618722DD5605EBCB772D7 /* Pods_Traffic_Buddy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DD9031CDFC948AE5D6D829E /* Pods_Traffic_Buddy.framework */; };
+		851098B220463F0000CDFAE0 /* wake.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 851098B120463EFF00CDFAE0 /* wake.mp3 */; };
 		853648472033BB76008C4BE1 /* MotionInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853648452033BB75008C4BE1 /* MotionInfoViewController.swift */; };
 		853648482033BB76008C4BE1 /* MotionInfoViewController+SettingData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853648462033BB75008C4BE1 /* MotionInfoViewController+SettingData.swift */; };
 		8536484A2033BB7E008C4BE1 /* MotionInfoEnums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853648492033BB7E008C4BE1 /* MotionInfoEnums.swift */; };
 		85A2C3AB202A8868008BDFF6 /* LoginWithAmazon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85A2C3AA202A8868008BDFF6 /* LoginWithAmazon.framework */; };
 		85A2C3AD202A88B0008BDFF6 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85A2C3AC202A88B0008BDFF6 /* Security.framework */; };
 		85A2C3AF202A88BF008BDFF6 /* SafariServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85A2C3AE202A88BF008BDFF6 /* SafariServices.framework */; };
+		85C7AE2D20462DB900B65F16 /* LoginWithAmazonProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85C7AE2C20462DB900B65F16 /* LoginWithAmazonProxy.swift */; };
+		85C7AE2F20462DEA00B65F16 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85C7AE2E20462DEA00B65F16 /* Settings.swift */; };
+		85C7AE312046307100B65F16 /* LoginWithAmazonToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85C7AE302046307100B65F16 /* LoginWithAmazonToken.swift */; };
+		85C7AE33204631EB00B65F16 /* AlexaVoiceServiceClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85C7AE32204631EB00B65F16 /* AlexaVoiceServiceClient.swift */; };
+		85C7AE352046333F00B65F16 /* AlexaViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85C7AE342046333F00B65F16 /* AlexaViewController.swift */; };
 		D30D4AA71FA6A812004EC057 /* UserLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D30D4AA61FA6A812004EC057 /* UserLocation.swift */; };
 		D34D67101FD5161C003E1CEB /* Speedometer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34D670F1FD5161C003E1CEB /* Speedometer.swift */; };
 		D361D0D71F81EB2E0060F25A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0D61F81EB2E0060F25A /* AppDelegate.swift */; };
@@ -28,12 +34,18 @@
 /* Begin PBXFileReference section */
 		15176B35FACD163915569F1B /* Pods-Traffic Buddy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Traffic Buddy.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy.debug.xcconfig"; sourceTree = "<group>"; };
 		232EF00B66F7DDBB3F765D36 /* Pods-Traffic Buddy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Traffic Buddy.release.xcconfig"; path = "Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy.release.xcconfig"; sourceTree = "<group>"; };
+		851098B120463EFF00CDFAE0 /* wake.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = wake.mp3; sourceTree = "<group>"; };
 		853648452033BB75008C4BE1 /* MotionInfoViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MotionInfoViewController.swift; sourceTree = "<group>"; };
 		853648462033BB75008C4BE1 /* MotionInfoViewController+SettingData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "MotionInfoViewController+SettingData.swift"; sourceTree = "<group>"; };
 		853648492033BB7E008C4BE1 /* MotionInfoEnums.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MotionInfoEnums.swift; sourceTree = "<group>"; };
 		85A2C3AA202A8868008BDFF6 /* LoginWithAmazon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = LoginWithAmazon.framework; sourceTree = "<group>"; };
 		85A2C3AC202A88B0008BDFF6 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		85A2C3AE202A88BF008BDFF6 /* SafariServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SafariServices.framework; path = System/Library/Frameworks/SafariServices.framework; sourceTree = SDKROOT; };
+		85C7AE2C20462DB900B65F16 /* LoginWithAmazonProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginWithAmazonProxy.swift; sourceTree = "<group>"; };
+		85C7AE2E20462DEA00B65F16 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
+		85C7AE302046307100B65F16 /* LoginWithAmazonToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginWithAmazonToken.swift; sourceTree = "<group>"; };
+		85C7AE32204631EB00B65F16 /* AlexaVoiceServiceClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlexaVoiceServiceClient.swift; sourceTree = "<group>"; };
+		85C7AE342046333F00B65F16 /* AlexaViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlexaViewController.swift; sourceTree = "<group>"; };
 		9DD9031CDFC948AE5D6D829E /* Pods_Traffic_Buddy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Traffic_Buddy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D30D4AA61FA6A812004EC057 /* UserLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserLocation.swift; sourceTree = "<group>"; };
 		D34D670F1FD5161C003E1CEB /* Speedometer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Speedometer.swift; sourceTree = "<group>"; };
@@ -86,6 +98,7 @@
 		D361D0CA1F81EB2E0060F25A = {
 			isa = PBXGroup;
 			children = (
+				851098B120463EFF00CDFAE0 /* wake.mp3 */,
 				D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */,
 				D361D0D51F81EB2E0060F25A /* Traffic Buddy */,
 				D361D0D41F81EB2E0060F25A /* Products */,
@@ -119,6 +132,10 @@
 			children = (
 				D361D0E91F81EC120060F25A /* Intersection.swift */,
 				D30D4AA61FA6A812004EC057 /* UserLocation.swift */,
+				85C7AE2C20462DB900B65F16 /* LoginWithAmazonProxy.swift */,
+				85C7AE2E20462DEA00B65F16 /* Settings.swift */,
+				85C7AE302046307100B65F16 /* LoginWithAmazonToken.swift */,
+				85C7AE32204631EB00B65F16 /* AlexaVoiceServiceClient.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -141,6 +158,7 @@
 				853648462033BB75008C4BE1 /* MotionInfoViewController+SettingData.swift */,
 				D361D0D61F81EB2E0060F25A /* AppDelegate.swift */,
 				D361D0D81F81EB2E0060F25A /* ViewController.swift */,
+				85C7AE342046333F00B65F16 /* AlexaViewController.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -213,6 +231,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D361D0E11F81EB2E0060F25A /* LaunchScreen.storyboard in Resources */,
+				851098B220463F0000CDFAE0 /* wake.mp3 in Resources */,
 				D3AE0BA01FB95F1D00DCD5BA /* particle.conf in Resources */,
 				D361D0DE1F81EB2E0060F25A /* Assets.xcassets in Resources */,
 				D361D0DC1F81EB2E0060F25A /* Main.storyboard in Resources */,
@@ -287,13 +306,18 @@
 			buildActionMask = 2147483647;
 			files = (
 				D361D0EA1F81EC120060F25A /* Intersection.swift in Sources */,
+				85C7AE2D20462DB900B65F16 /* LoginWithAmazonProxy.swift in Sources */,
+				85C7AE312046307100B65F16 /* LoginWithAmazonToken.swift in Sources */,
 				D34D67101FD5161C003E1CEB /* Speedometer.swift in Sources */,
 				8536484A2033BB7E008C4BE1 /* MotionInfoEnums.swift in Sources */,
+				85C7AE33204631EB00B65F16 /* AlexaVoiceServiceClient.swift in Sources */,
+				85C7AE2F20462DEA00B65F16 /* Settings.swift in Sources */,
 				853648472033BB76008C4BE1 /* MotionInfoViewController.swift in Sources */,
 				D30D4AA71FA6A812004EC057 /* UserLocation.swift in Sources */,
 				D361D0D91F81EB2E0060F25A /* ViewController.swift in Sources */,
 				D361D0D71F81EB2E0060F25A /* AppDelegate.swift in Sources */,
 				853648482033BB76008C4BE1 /* MotionInfoViewController+SettingData.swift in Sources */,
+				85C7AE352046333F00B65F16 /* AlexaViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

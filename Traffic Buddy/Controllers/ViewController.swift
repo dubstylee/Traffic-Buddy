@@ -19,7 +19,8 @@ import UIKit
 import LoginWithAmazon
 
 
-class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate, MFMailComposeViewControllerDelegate {
+class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate, MFMailComposeViewControllerDelegate, AIAuthenticationDelegate {
+    
     let kMotionUpdateInterval = 0.2
 
     var nearIntersection = false
@@ -45,6 +46,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     var locationTimer: Timer?
     var pollServerTimer: Timer?
     var initialAttitude: CMAttitude?
+    let lwa = LoginWithAmazonProxy.sharedInstance
     
     @IBOutlet weak var triggerRelayButton: UIButton!
     @IBOutlet weak var pollServerButton: UIButton!
@@ -116,7 +118,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
     
     override var canBecomeFirstResponder: Bool {
-        return true
+        get { return true }
     }
     
     @objc func updateAutoPollPause() {
@@ -671,6 +673,28 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
     }
     
+    func requestDidSucceed(_ apiResult: APIResult) {
+        switch(apiResult.api) {
+        case API.authorizeUser:
+            print("Authorized")
+            lwa.getAccessToken(delegate: self)
+        case API.getAccessToken:
+            print("Login successfully!")
+            LoginWithAmazonToken.sharedInstance.loginWithAmazonToken = apiResult.result as! String?
+            let storyboard = UIStoryboard(name: "Main", bundle: nil)
+            let controller = storyboard.instantiateViewController(withIdentifier: "AlexaViewController")
+            self.present(controller, animated: true, completion: nil)
+        case API.clearAuthorizationState:
+            print("Logout successfully!")
+        default:
+            return
+        }
+    }
+    
+    func requestDidFail(_ errorResponse: APIError) {
+        print("Error: \(errorResponse.error.message)")
+    }
+    
     @IBAction func recordButton(_ sender: Any) {
         if recordSensors.title(for: .normal) == "record" {
             startMotionUpdates()
@@ -691,6 +715,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     @IBAction func triggerRelayButtonClick(_ sender: Any) {
         let number = "1"
         triggerRelay(relayNumber: number)
+    }
+    
+    @IBAction func loginWithAmazonButtonClick(_ sender: Any) {
+        lwa.login(delegate: self)
     }
 }
 

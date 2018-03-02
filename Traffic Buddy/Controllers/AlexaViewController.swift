@@ -11,6 +11,7 @@ import AVFoundation
 
 class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecorderDelegate {
 
+    @IBOutlet weak var recordButton: UIButton!
     @IBOutlet weak var infoLabel: UILabel!
     /*
     @IBOutlet weak var pingBtn: UIButton!
@@ -58,9 +59,15 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
             avsClient.ping()
             
             do {
+                let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                let fileURL = directory.appendingPathComponent(Settings.Audio.WAKE_FILE_NAME)
+                
+                //let url = Bundle.main.url(forResource: "wake", withExtension: "m4a")
+                //let wake = try Data(contentsOf: url!)
+                
                 // https://developer.amazon.com/docs/alexa-voice-service/recommended-media-support.html
                 // mp3, aac, wav, etc.
-                try avsClient.postRecording(audioData: Data(contentsOf: Bundle.main.url(forResource: "wake", withExtension: "mp3")!))
+                try avsClient.postRecording(audioData: Data(contentsOf: fileURL))
             } catch let ex {
                 print("AVS Client threw an error: \(ex.localizedDescription)")
             }
@@ -75,15 +82,16 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     @IBAction func onClickStartDownchannelBtn(_ sender: Any) {
         avsClient.startDownchannel()
     }
-    
-    @IBAction func onClickPushToTalkBtn(_ sender: Any) {
+    */
+    @IBAction func recordButtonClick(_ sender: Any) {
         
         if (self.isRecording) {
             audioRecorder.stop()
             
             self.isRecording = false
-            pushToTalkBtn.setTitle("Push to Talk", for: .normal)
-            
+            recordButton.setTitle("record", for: .normal)
+            recordButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
+
             do {
                 try avsClient.postRecording(audioData: Data(contentsOf: audioRecorder.url))
             } catch let ex {
@@ -96,10 +104,11 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
             audioRecorder.record()
             
             self.isRecording = true
-            pushToTalkBtn.setTitle("Recording, click to stop", for: .normal)
+            recordButton.setTitle("stop", for: .normal)
+            recordButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
         }
     }
-    
+    /*
     @IBAction func onClickWakeWordBtn(_ sender: Any) {
         
         if (self.isListening) {

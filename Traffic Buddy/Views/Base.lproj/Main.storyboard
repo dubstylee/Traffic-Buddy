@@ -188,12 +188,23 @@
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="xFj-tg-d3f">
+                                <rect key="frame" x="172" y="136" width="30" height="30"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <fontDescription key="fontDescription" name=".AppleSystemUIFont" family=".AppleSystemUIFont" pointSize="11"/>
+                                <state key="normal" title="record" image="record-30px"/>
+                                <connections>
+                                    <action selector="recordButtonClick:" destination="eES-15-q7k" eventType="touchUpInside" id="vMM-rO-gn1"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <viewLayoutGuide key="safeArea" id="Ze0-dy-hkj"/>
                     </view>
                     <connections>
                         <outlet property="infoLabel" destination="V04-tM-l80" id="FP0-fv-dt0"/>
+                        <outlet property="recordButton" destination="xFj-tg-d3f" id="Rru-KM-UcD"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="njU-zc-EL5" userLabel="First Responder" sceneMemberID="firstResponder"/>

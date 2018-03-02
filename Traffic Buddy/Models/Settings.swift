@@ -22,6 +22,7 @@ struct Settings {
     
     struct Audio {
         static let TEMP_FILE_NAME = "alexa.wav"
+        static let WAKE_FILE_NAME = "wake.wav"
         static let RECORDING_SETTING =
             [AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
              AVEncoderBitRateKey: 16,

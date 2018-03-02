@@ -142,7 +142,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             motionManager.deviceMotionUpdateInterval = kMotionUpdateInterval
             motionManager.startDeviceMotionUpdates(to: OperationQueue.main) { (motionData, error) in
                 self.report(motion: motionData)
-                self.log(error: error, forSensor: .deviceMotion)
+                self.log(error: error)
             }
         }
         else {
@@ -151,7 +151,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 motionManager.accelerometerUpdateInterval = kMotionUpdateInterval
                 motionManager.startAccelerometerUpdates(to: OperationQueue.main) { (accelerometerData, error) in
                     self.report(acceleration: accelerometerData?.acceleration)
-                    self.log(error: error, forSensor: .accelerometer)
+                    self.log(error: error)
                 }
             }
             
@@ -159,7 +159,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 motionManager.gyroUpdateInterval = kMotionUpdateInterval
                 motionManager.startGyroUpdates(to: OperationQueue.main) { (gyroData, error) in
                     self.report(rotationRate: gyroData?.rotationRate)
-                    self.log(error: error, forSensor: .gyro)
+                    self.log(error: error)
                 }
             }
         }
@@ -240,10 +240,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
      - parameter error:  Error value.
      - parameter sensor: `DeviceSensor` that triggered the error.
      */
-    fileprivate func log(error: Error?, forSensor sensor: DeviceSensor) {
+    fileprivate func log(error: Error?) {
         guard let error = error else { return }
         
-        NSLog("Error reading data from \(sensor.description): \n \(error) \n")
+        NSLog("Error reading sensor data: \n \(error) \n")
     }
     
     override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {

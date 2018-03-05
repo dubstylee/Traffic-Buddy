@@ -29,7 +29,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     let metersPerSecToMilesPerHour = 2.23694
     let realm = try! Realm()
     var intersections: Results<Intersection>!
-    var locationRealm: Realm?
+    //var locationRealm: Realm?
     var token: String?
     //var hcKalmanFilter: HCKalmanAlgorithm?
     //var resetKalmanFilter: Bool = false

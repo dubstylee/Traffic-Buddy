@@ -7,8 +7,8 @@
 //
 
 import UIKit
-//import Realm
-//import RealmSwift
+import Realm
+import RealmSwift
 import CoreData
 import LoginWithAmazon
 
@@ -16,15 +16,23 @@ import LoginWithAmazon
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-    //var realm: Realm?
+    var realm: Realm?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         // make sure location history realm is created
-        /*let config = Realm.Configuration(
-            fileURL: Bundle.main.url(forResource: "locationhistory", withExtension: "realm"),
-            readOnly: false)
-        realm = try! Realm(configuration: config)*/
+        let config = Realm.Configuration(readOnly: false, schemaVersion: 2,
+                                         migrationBlock: { migration, oldSchemaVersion in
+                                            if (oldSchemaVersion < 2) {
+                                                // Nothing to do!
+                                                // Realm will automatically detect new properties and removed properties
+                                                // And will update the schema on disk automatically
+                                            }
+        })
+
+        // fileURL: Bundle.main.url(forResource: "locationhistory", withExtension: "realm"),
+        Realm.Configuration.defaultConfiguration = config
+        realm = try! Realm()
         application.isIdleTimerDisabled = true
         return true
     }

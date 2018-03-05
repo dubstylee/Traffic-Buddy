@@ -322,6 +322,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         if self.intersections.count == 0 {
             try! realm.write {
                 realm.add(Intersection(latitude: 44.040030, longitude: -123.080198, title: "18th & Alder"))
+                // headings.add(0 degrees 10 minutes 42 seconds
+                // headings.add(180 degrees 10 minutes 42 seconds
                 #if DEBUG
                 realm.add(Intersection(latitude: 44.084221, longitude: -123.061607, title: "Cambridge Oaks Dr"))
                 realm.add(Intersection(latitude: 44.080277, longitude: -123.067722, title: "Coburg & Willakenzie"))

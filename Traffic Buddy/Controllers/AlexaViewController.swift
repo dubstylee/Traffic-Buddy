@@ -59,17 +59,20 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
             avsClient.ping()
             
             do {
-                let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                let fileURL = directory.appendingPathComponent(Settings.Audio.WAKE_FILE_NAME)
+                //let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                //let fileURL = directory.appendingPathComponent(Settings.Audio.WAKE_FILE_NAME)
                 
-                //let url = Bundle.main.url(forResource: "wake", withExtension: "m4a")
-                //let wake = try Data(contentsOf: url!)
+                let url = Bundle.main.url(forResource: "wake", withExtension: "wav")
+                let wake = try Data(contentsOf: url!)
+                
+                avsClient.postRecording(audioData: wake)
                 
                 // https://developer.amazon.com/docs/alexa-voice-service/recommended-media-support.html
                 // mp3, aac, wav, etc.
-                try avsClient.postRecording(audioData: Data(contentsOf: fileURL))
+                // try avsClient.postRecording(audioData: Data(contentsOf: fileURL))
             } catch let ex {
                 print("AVS Client threw an error: \(ex.localizedDescription)")
+                self.infoLabel.text = "wake word audio file not found"
             }
         }
     }

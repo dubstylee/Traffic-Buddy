@@ -8,11 +8,23 @@
 
 import UIKit
 import AVFoundation
+import MapKit
+import Particle_SDK
 
-class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecorderDelegate {
+class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecorderDelegate, MKMapViewDelegate {
 
     @IBOutlet weak var recordButton: UIButton!
+    @IBOutlet weak var recordSensorsButton: UIButton!
     @IBOutlet weak var infoLabel: UILabel!
+    @IBOutlet weak var startButton: UIButton!
+    @IBOutlet weak var pollServerButton: UIButton!
+    @IBOutlet weak var triggerRelayButton: UIButton!
+    @IBOutlet weak var relayStateView: UIView!
+    @IBOutlet weak var textView: UITextView!
+    @IBOutlet weak var mapView: MKMapView!
+    var myPhoton : ParticleDevice?
+    var pollServerTimer: Timer?
+    
     /*
     @IBOutlet weak var pingBtn: UIButton!
     @IBOutlet weak var startDownchannelBtn: UIButton!
@@ -37,6 +49,11 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        self.relayStateView.layer.borderColor = UIColor.black.cgColor
+        self.relayStateView.layer.borderWidth = 1.0
+        self.textView.layoutManager.allowsNonContiguousLayout = false
+        self.textView.text = ""
+        
         //snowboy = SnowboyWrapper(resources: Settings.WakeWord.RESOURCE, modelStr: Settings.WakeWord.MODEL)
         //snowboy.setSensitivity(Settings.WakeWord.SENSITIVITY)
         //snowboy.setAudioGain(Settings.WakeWord.AUDIO_GAIN)
@@ -47,6 +64,12 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         avsClient.downchannelHandler = self.downchannelHandler
         
         self.becomeFirstResponder()
+        
+        if myPhoton != nil {
+            self.pollServerButton.isEnabled = true
+            self.triggerRelayButton.isEnabled = true
+        }
+        setupMapView()
     }
     
     override var canBecomeFirstResponder: Bool {
@@ -92,10 +115,11 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
             audioRecorder.stop()
             
             self.isRecording = false
-            recordButton.setTitle("record", for: .normal)
-            recordButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
+            recordButton.setTitle("mic", for: .normal)
+            recordButton.setImage(UIImage(named: "mic-30px.png"), for: .normal)
 
             do {
+                print(audioRecorder.url)
                 try avsClient.postRecording(audioData: Data(contentsOf: audioRecorder.url))
             } catch let ex {
                 print("AVS Client threw an error: \(ex.localizedDescription)")
@@ -130,6 +154,20 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         
     }
     */
+    
+    /**
+     Append the text to the textView, with the current date/time.
+     */
+    internal func updateTextView(text: String) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
+        
+        textView.text = textView.text + "[\(formatter.string(from: NSDate() as Date))] \(text)\n"
+        
+        let bottom = NSMakeRange(textView.text.count - 1, 1)
+        textView.scrollRangeToVisible(bottom)
+    }
+    
     func prepareAudioSession() {
         do {
             let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -151,6 +189,17 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         } catch let ex {
             print("Audio session for wake word has an error: \(ex.localizedDescription)")
         }
+    }
+    
+    func setupMapView() {
+        mapView.delegate = self
+        mapView.layer.borderColor = UIColor.black.cgColor
+        mapView.layer.borderWidth = 1.0
+        /*for i in self.intersections {
+            // draw a circle to indicate intersection
+            let circle = MKCircle(center: i.getLocation().coordinate, radius: 10 as CLLocationDistance)
+            mapView.add(circle)
+        }*/
     }
     
     @objc func startListening() {
@@ -297,7 +346,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         if (power < Settings.Audio.SILENCE_THRESHOLD) {
             
             DispatchQueue.main.async { () -> Void in
-               // self.infoLabel.text = "Waiting for Alexa to respond..."
+               self.infoLabel.text = "Waiting for Alexa to respond..."
             }
             
             stopCaptureTimer.invalidate()
@@ -313,6 +362,103 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
             prepareAudioSessionForWakeWord()
             snowboyTimer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(startListening), userInfo: nil, repeats: true)
         }
+    }
+    
+    func readLoopState(silent: Bool) {
+        myPhoton!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
+            if let _ = error {
+                if (!silent) {
+                    self.updateTextView(text: "failed reading loop state from device")
+                }
+            }
+            else {
+                if let status = result as? Int {
+                    if status == 1 {
+                        self.relayStateView.backgroundColor = UIColor.green
+                    }
+                    else {
+                        self.relayStateView.backgroundColor = UIColor.red
+                    }
+                    
+                    if (!silent) {
+                        self.updateTextView(text: "loop is \(status)")
+                    }
+                }
+            }
+        })
+    }
+    
+    func triggerRelay(relayNumber: String) {
+        self.updateTextView(text: "triggering relay #\(relayNumber)")
+        
+        let task = myPhoton!.callFunction("relay_on", withArguments: [relayNumber]) { (resultCode : NSNumber?, error : Error?) -> Void in
+            if (error == nil) {
+                self.readLoopState(silent: false)
+            }
+            else {
+                self.updateTextView(text: "error triggering relay")
+            }
+        }
+        let bytes : Int64 = task.countOfBytesExpectedToReceive
+        if bytes > 0 {
+            // ..do something with bytesToReceive
+        }
+    }
+    
+    @IBAction func startTripClick(_ sender: Any) {
+        if startButton.titleLabel?.text == "Start Trip" {
+            startButton.setTitle("Stop Trip", for: .normal)
+            //polling = true
+            self.updateTextView(text: "starting bicycle trip")
+        }
+        else if startButton.titleLabel?.text == "Stop Trip" {
+            startButton.setTitle("Start Trip", for: .normal)
+            relayStateView.backgroundColor = UIColor.white
+            //autoPollTimer?.invalidate()
+            //locationTimer?.invalidate()
+            pollServerTimer?.invalidate()
+            //pause = false
+            //polling = false
+            self.updateTextView(text: "stopping bicycle trip")
+        }
+    }
+    
+    @objc func updatePollServerButton() {
+        pollServerButton.isEnabled = true
+    }
+    
+    @IBAction func pollServerButtonClick(_ sender: Any) {
+        //readLedState()
+        updateTextView(text: "polling server")
+        readLoopState(silent: false)
+        pollServerButton.isEnabled = false
+        pollServerTimer = Timer.scheduledTimer(timeInterval: 5,
+                                               target: self,
+                                               selector: #selector(self.updatePollServerButton),
+                                               userInfo: nil,
+                                               repeats: false)
+    }
+    
+    @IBAction func recordSensorsButtonClick(_ sender: Any) {
+        if recordSensorsButton.title(for: .normal) == "record" {
+            //startMotionUpdates()
+            recordSensorsButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
+            recordSensorsButton.setTitle("stop", for: .normal)
+        } else if recordSensorsButton.title(for: .normal) == "stop" {
+            //stopMotionUpdates()
+            recordSensorsButton.setImage(UIImage(named: "email-30px.png"), for: .normal)
+            recordSensorsButton.setTitle("send", for: .normal)
+        } else {
+            // e-mail csv file
+            //exportCsv()
+            recordSensorsButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
+            recordSensorsButton.setTitle("record", for: .normal)
+        }
+    }
+
+    @IBAction func triggerRelayButtonClick(_ sender: Any) {
+        let number = "1"
+        triggerRelay(relayNumber: number)
     }
     
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {

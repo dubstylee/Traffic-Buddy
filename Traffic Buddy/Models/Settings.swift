@@ -22,10 +22,12 @@ struct Settings {
     
     struct Audio {
         static let TEMP_FILE_NAME = "alexa.wav"
+        static let TEMP_M4A_NAME = "alexa.m4a"
         static let WAKE_FILE_NAME = "wake.wav"
         static let RECORDING_SETTING =
             [AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
              AVEncoderBitRateKey: 16,
+             //AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
              AVNumberOfChannelsKey: 1,
              AVSampleRateKey: 16000.0] as [String : Any]
         static let SILENCE_THRESHOLD = -30.0 as Float

@@ -27,7 +27,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     let locationManager = CLLocationManager()
     let distanceThreshold = 200.0 // 1320.0 == quarter mile
     let metersPerSecToMilesPerHour = 2.23694
-    let realm = try! Realm()
+    //let realm = try! Realm()
+    var realm: Realm?
     var intersections: Results<Intersection>!
     //var locationRealm: Realm?
     var token: String?
@@ -47,6 +48,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     var pollServerTimer: Timer?
     var initialAttitude: CMAttitude?
     let lwa = LoginWithAmazonProxy.sharedInstance
+    var myPhoton : ParticleDevice?
     
     @IBOutlet weak var triggerRelayButton: UIButton!
     @IBOutlet weak var pollServerButton: UIButton!
@@ -63,6 +65,19 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        var config = Realm.Configuration(readOnly: false, schemaVersion: 3,
+                                         migrationBlock: { migration, oldSchemaVersion in
+                                            if (oldSchemaVersion < 2) {
+                                                // Nothing to do!
+                                                // Realm will automatically detect new properties and removed properties
+                                                // And will update the schema on disk automatically
+                                            }
+        })
+        config.deleteRealmIfMigrationNeeded = true
+        
+        Realm.Configuration.defaultConfiguration = config
+        realm = try! Realm()
         
         self.becomeFirstResponder()
         self.formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
@@ -272,7 +287,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         mapView.setRegion(coordinateRegion, animated: true)
     }
     
-    var myPhoton : ParticleDevice?
+    
     func getDevices() {
         ParticleCloud.sharedInstance().getDevices {
             (devices:[ParticleDevice]?, error:Error?) -> Void in
@@ -317,20 +332,22 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
 
     func initRealm() {
-        self.intersections = realm.objects(Intersection.self)
+        self.intersections = realm?.objects(Intersection.self)
 
         if self.intersections.count == 0 {
-            try! realm.write {
-                realm.add(Intersection(latitude: 44.040030, longitude: -123.080198, title: "18th & Alder"))
-                // headings.add(0 degrees 10 minutes 42 seconds
-                // headings.add(180 degrees 10 minutes 42 seconds
+            try! realm?.write {
+                //realm?.add(Intersection(latitude: 44.040030, longitude: -123.080198, title: "18th & Alder"))
+                let intersection = Intersection(latitude: 44.040030, longitude: -123.080198, title: "18th & Alder")
+                intersection.headings.append(0.1783)   //   0° 10' 42"
+                intersection.headings.append(180.1783) // 180° 10' 42"
+                realm?.add(intersection)
                 #if DEBUG
-                realm.add(Intersection(latitude: 44.084221, longitude: -123.061607, title: "Cambridge Oaks Dr"))
-                realm.add(Intersection(latitude: 44.080277, longitude: -123.067722, title: "Coburg & Willakenzie"))
-                realm.add(Intersection(latitude: 44.045489, longitude: -123.070931, title: "13th Ave Kiosk"))
-                realm.add(Intersection(latitude: 44.045689, longitude: -123.066324, title: "13th & Franklin"))
-                realm.add(Intersection(latitude: 44.056741, longitude: -123.024210, title: "Centennial & Pioneer Pkwy W"))
-                realm.add(Intersection(latitude: 44.056656, longitude: -123.023835, title: "Centennial & Pioneer Pkwy E"))
+                realm?.add(Intersection(latitude: 44.084221, longitude: -123.061607, title: "Cambridge Oaks Dr"))
+                realm?.add(Intersection(latitude: 44.080277, longitude: -123.067722, title: "Coburg & Willakenzie"))
+                realm?.add(Intersection(latitude: 44.045489, longitude: -123.070931, title: "13th Ave Kiosk"))
+                realm?.add(Intersection(latitude: 44.045689, longitude: -123.066324, title: "13th & Franklin"))
+                realm?.add(Intersection(latitude: 44.056741, longitude: -123.024210, title: "Centennial & Pioneer Pkwy W"))
+                realm?.add(Intersection(latitude: 44.056656, longitude: -123.023835, title: "Centennial & Pioneer Pkwy E"))
                 #endif
             }
         }
@@ -684,7 +701,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             print("Login successfully!")
             LoginWithAmazonToken.sharedInstance.loginWithAmazonToken = apiResult.result as! String?
             let storyboard = UIStoryboard(name: "Main", bundle: nil)
-            let controller = storyboard.instantiateViewController(withIdentifier: "AlexaViewController")
+            let controller = storyboard.instantiateViewController(withIdentifier: "AlexaViewController") as! AlexaViewController
+            controller.myPhoton = myPhoton
             self.present(controller, animated: true, completion: nil)
         case API.clearAuthorizationState:
             print("Logout successfully!")

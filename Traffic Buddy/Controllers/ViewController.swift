@@ -121,6 +121,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
         initRealm()
         setupMapView()
+        print(Realm.Configuration.defaultConfiguration.fileURL!)
         
         if ParticleCloud.sharedInstance().injectSessionAccessToken(token!) {
             infoLabel.text = "session active"
@@ -317,7 +318,35 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             // draw a circle to indicate intersection
             let circle = MKCircle(center: i.getLocation().coordinate, radius: 10 as CLLocationDistance)
             mapView.add(circle)
+            
+            /* for h in i.headings {
+                // draw arrows to indicate heading directions
+                let line = drawLine(start: i.getLocation(), direction: h, length: 15.0)
+                mapView.add(line)
+            } */
         }
+    }
+    
+    func locationWithBearing(bearing:Double, distanceMeters:Double, origin:CLLocationCoordinate2D) -> CLLocationCoordinate2D {
+        let distRadians = distanceMeters / (6372797.6) // earth radius in meters
+        
+        let lat1 = origin.latitude * Double.pi / 180
+        let lon1 = origin.longitude * Double.pi / 180
+        
+        let lat2 = asin(sin(lat1) * cos(distRadians) + cos(lat1) * sin(distRadians) * cos(bearing))
+        let lon2 = lon1 + atan2(sin(bearing) * sin(distRadians) * cos(lat1), cos(distRadians) - sin(lat1) * sin(lat2))
+        
+        return CLLocationCoordinate2D(latitude: lat2 * 180 / Double.pi, longitude: lon2 * 180 / Double.pi)
+    }
+    
+    internal func drawLine(start: CLLocation, direction: Double, length: Double) -> MKPolyline {
+        var coords = [CLLocationCoordinate2D]()
+        
+        coords.append(start.coordinate)
+        coords.append(CLLocationCoordinate2D(latitude: 44.040127, longitude: -123.080199))
+        //coords.append(locationWithBearing(bearing: direction, distanceMeters: length, origin: start.coordinate))
+        
+        return MKPolyline(coordinates: coords, count: coords.count)
     }
     
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
@@ -327,6 +356,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             circle.fillColor = UIColor(red: 255, green: 0, blue: 0, alpha: 0.1)
             circle.lineWidth = 1
             return circle
+        } else if overlay is MKPolyline {
+            let line = MKPolylineRenderer(overlay: overlay)
+            line.strokeColor = UIColor.red
+            line.lineWidth = 2.0
+            return line
         }
         return MKOverlayRenderer()
     }
@@ -702,7 +736,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             LoginWithAmazonToken.sharedInstance.loginWithAmazonToken = apiResult.result as! String?
             let storyboard = UIStoryboard(name: "Main", bundle: nil)
             let controller = storyboard.instantiateViewController(withIdentifier: "AlexaViewController") as! AlexaViewController
-            controller.myPhoton = myPhoton
+            controller.myPhoton = self.myPhoton
+            controller.intersections = self.intersections
             self.present(controller, animated: true, completion: nil)
         case API.clearAuthorizationState:
             print("Logout successfully!")

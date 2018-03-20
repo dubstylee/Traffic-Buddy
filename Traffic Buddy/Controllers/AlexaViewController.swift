@@ -10,6 +10,8 @@ import UIKit
 import AVFoundation
 import MapKit
 import Particle_SDK
+import Realm
+import RealmSwift
 
 class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecorderDelegate, MKMapViewDelegate {
 
@@ -24,6 +26,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     @IBOutlet weak var mapView: MKMapView!
     var myPhoton : ParticleDevice?
     var pollServerTimer: Timer?
+    var intersections: Results<Intersection>!
     
     /*
     @IBOutlet weak var pingBtn: UIButton!
@@ -101,14 +104,11 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     }
 
     /*
-    @IBAction func onClickPingBtn(_ sender: Any) {
-        avsClient.ping()
-    }
-    
     @IBAction func onClickStartDownchannelBtn(_ sender: Any) {
         avsClient.startDownchannel()
     }
     */
+    
     @IBAction func recordButtonClick(_ sender: Any) {
         
         if (self.isRecording) {
@@ -135,25 +135,6 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
             recordButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
         }
     }
-    /*
-    @IBAction func onClickWakeWordBtn(_ sender: Any) {
-        
-        if (self.isListening) {
-            self.isListening = false
-            wakeWordBtn.setTitle("Start Wake Word", for: .normal)
-            
-            snowboyTimer.invalidate()
-        } else {
-            self.isListening = true
-            wakeWordBtn.setTitle("Listening, click to stop", for: .normal)
-            
-            prepareAudioSessionForWakeWord()
-            
-            snowboyTimer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(startListening), userInfo: nil, repeats: true)
-        }
-        
-    }
-    */
     
     /**
      Append the text to the textView, with the current date/time.
@@ -195,11 +176,83 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         mapView.delegate = self
         mapView.layer.borderColor = UIColor.black.cgColor
         mapView.layer.borderWidth = 1.0
-        /*for i in self.intersections {
+        for i in self.intersections {
             // draw a circle to indicate intersection
             let circle = MKCircle(center: i.getLocation().coordinate, radius: 10 as CLLocationDistance)
             mapView.add(circle)
-        }*/
+            
+            for h in i.headings {
+                // draw arrows to indicate heading directions
+                let line = drawLine(start: i.getLocation(), direction: h, length: 15.0)
+                mapView.add(line)
+            }
+        }
+    }
+    
+    func degreesToRadians(degrees: Double) -> Double { return degrees * .pi / 180.0 }
+    func radiansToDegrees(radians: Double) -> Double { return radians * 180.0 / .pi }
+    
+    func getBearingBetweenTwoPoints1(point1 : CLLocation, point2 : CLLocation) -> Double {
+        
+        let lat1 = degreesToRadians(degrees: point1.coordinate.latitude)
+        let lon1 = degreesToRadians(degrees: point1.coordinate.longitude)
+        
+        let lat2 = degreesToRadians(degrees: point2.coordinate.latitude)
+        let lon2 = degreesToRadians(degrees: point2.coordinate.longitude)
+        
+        let dLon = lon2 - lon1
+        
+        let y = sin(dLon) * cos(lat2)
+        let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
+        let radiansBearing = atan2(y, x)
+        
+        return radiansToDegrees(radians: radiansBearing)
+    }
+    
+    // double precision arithmetic is too inaccurate to calculate location coordinates
+    func locationWithBearing(bearing:Double, distanceMeters:Double, origin:CLLocationCoordinate2D) -> CLLocationCoordinate2D {
+        let distRadians = distanceMeters / (6372797.6) // earth radius in meters
+        
+        let lat1 = origin.latitude * Double.pi / 180.0
+        let lon1 = origin.longitude * Double.pi / 180.0
+        
+        let lat2 = asin(sin(lat1) * cos(distRadians) + cos(lat1) * sin(distRadians) * cos(bearing))
+        let lon2 = lon1 + atan2(sin(bearing) * sin(distRadians) * cos(lat1), cos(distRadians) - sin(lat1) * sin(lat2))
+        
+        let coord = CLLocationCoordinate2D(latitude: lat2 * 180.0 / Double.pi, longitude: lon2 * 180.0 / Double.pi)
+        print("locationWithBearing: \(coord.latitude),\(coord.longitude)")
+        return coord
+    }
+    
+    internal func drawLine(start: CLLocation, direction: Double, length: Double) -> MKPolyline {
+        var coords = [CLLocationCoordinate2D]()
+        
+        //print(getBearingBetweenTwoPoints1(point1: start, point2: CLLocation(latitude: 44.039963, longitude: -123.080199)))
+        
+        //coords.append(CLLocationCoordinate2D(latitude: 44.039963, longitude: -123.080199))
+        //coords.append(locationWithBearing(bearing: 180.6147, distanceMeters: length, origin: start.coordinate))
+        coords.append(locationWithBearing(bearing: getBearingBetweenTwoPoints1(point1: start, point2: CLLocation(latitude: 44.039963, longitude: -123.080199)), distanceMeters: length, origin: start.coordinate))
+        coords.append(start.coordinate)
+        coords.append(CLLocationCoordinate2D(latitude: 44.040127, longitude: -123.080199))
+        //coords.append(locationWithBearing(bearing: 359.5753, distanceMeters: length, origin: start.coordinate))
+
+        return MKPolyline(coordinates: coords, count: coords.count)
+    }
+    
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+        if overlay is MKCircle {
+            let circle = MKCircleRenderer(overlay: overlay)
+            circle.strokeColor = UIColor.red
+            circle.fillColor = UIColor(red: 255, green: 0, blue: 0, alpha: 0.1)
+            circle.lineWidth = 1
+            return circle
+        } else if overlay is MKPolyline {
+            let line = MKPolylineRenderer(overlay: overlay)
+            line.strokeColor = UIColor.red
+            line.lineWidth = 2.0
+            return line
+        }
+        return MKOverlayRenderer()
     }
     
     @objc func startListening() {

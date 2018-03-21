@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		7D2618722DD5605EBCB772D7 /* Pods_Traffic_Buddy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DD9031CDFC948AE5D6D829E /* Pods_Traffic_Buddy.framework */; };
+		853211F92061C86C000C237F /* MapHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853211F82061C86C000C237F /* MapHelper.swift */; };
+		853211FB2061CBD9000C237F /* ButtonHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853211FA2061CBD9000C237F /* ButtonHelper.swift */; };
+		853211FD2061CFA7000C237F /* MotionHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853211FC2061CFA7000C237F /* MotionHelper.swift */; };
 		85A2C3AB202A8868008BDFF6 /* LoginWithAmazon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85A2C3AA202A8868008BDFF6 /* LoginWithAmazon.framework */; };
 		85A2C3AD202A88B0008BDFF6 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85A2C3AC202A88B0008BDFF6 /* Security.framework */; };
 		85A2C3AF202A88BF008BDFF6 /* SafariServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85A2C3AE202A88BF008BDFF6 /* SafariServices.framework */; };
@@ -31,6 +34,9 @@
 /* Begin PBXFileReference section */
 		15176B35FACD163915569F1B /* Pods-Traffic Buddy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Traffic Buddy.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy.debug.xcconfig"; sourceTree = "<group>"; };
 		232EF00B66F7DDBB3F765D36 /* Pods-Traffic Buddy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Traffic Buddy.release.xcconfig"; path = "Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy.release.xcconfig"; sourceTree = "<group>"; };
+		853211F82061C86C000C237F /* MapHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapHelper.swift; sourceTree = "<group>"; };
+		853211FA2061CBD9000C237F /* ButtonHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonHelper.swift; sourceTree = "<group>"; };
+		853211FC2061CFA7000C237F /* MotionHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionHelper.swift; sourceTree = "<group>"; };
 		85A2C3AA202A8868008BDFF6 /* LoginWithAmazon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = LoginWithAmazon.framework; sourceTree = "<group>"; };
 		85A2C3AC202A88B0008BDFF6 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		85A2C3AE202A88BF008BDFF6 /* SafariServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SafariServices.framework; path = System/Library/Frameworks/SafariServices.framework; sourceTree = SDKROOT; };
@@ -150,6 +156,9 @@
 				D361D0D61F81EB2E0060F25A /* AppDelegate.swift */,
 				D361D0D81F81EB2E0060F25A /* ViewController.swift */,
 				85C7AE342046333F00B65F16 /* AlexaViewController.swift */,
+				853211F82061C86C000C237F /* MapHelper.swift */,
+				853211FA2061CBD9000C237F /* ButtonHelper.swift */,
+				853211FC2061CFA7000C237F /* MotionHelper.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -298,8 +307,11 @@
 			files = (
 				D361D0EA1F81EC120060F25A /* Intersection.swift in Sources */,
 				85C7AE2D20462DB900B65F16 /* LoginWithAmazonProxy.swift in Sources */,
+				853211FD2061CFA7000C237F /* MotionHelper.swift in Sources */,
 				85C7AE312046307100B65F16 /* LoginWithAmazonToken.swift in Sources */,
 				D34D67101FD5161C003E1CEB /* Speedometer.swift in Sources */,
+				853211F92061C86C000C237F /* MapHelper.swift in Sources */,
+				853211FB2061CBD9000C237F /* ButtonHelper.swift in Sources */,
 				85C7AE33204631EB00B65F16 /* AlexaVoiceServiceClient.swift in Sources */,
 				85C7AE2F20462DEA00B65F16 /* Settings.swift in Sources */,
 				D30D4AA71FA6A812004EC057 /* UserLocation.swift in Sources */,

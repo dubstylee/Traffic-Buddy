@@ -272,7 +272,9 @@
                     </view>
                     <connections>
                         <outlet property="infoLabel" destination="V04-tM-l80" id="FP0-fv-dt0"/>
+                        <outlet property="locationLabel" destination="OiQ-k0-dxT" id="LAu-nf-wrJ"/>
                         <outlet property="mapView" destination="nXw-8Q-Vkc" id="Jhb-GJ-4M4"/>
+                        <outlet property="nearestIntersectionLabel" destination="TSu-uC-IXJ" id="M7d-fc-yZl"/>
                         <outlet property="pollServerButton" destination="LU0-vz-bwR" id="oqq-87-Npc"/>
                         <outlet property="recordButton" destination="xFj-tg-d3f" id="Rru-KM-UcD"/>
                         <outlet property="recordSensorsButton" destination="SZk-go-EGw" id="bqJ-Ti-RVO"/>

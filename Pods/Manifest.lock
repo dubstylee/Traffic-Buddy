@@ -21,11 +21,11 @@ PODS:
   - Particle-SDK/SDK (0.7.0):
     - AFNetworking (~> 3.0)
     - Particle-SDK/Helpers
-  - Realm (3.1.1):
-    - Realm/Headers (= 3.1.1)
-  - Realm/Headers (3.1.1)
-  - RealmSwift (3.1.1):
-    - Realm (= 3.1.1)
+  - Realm (3.3.0):
+    - Realm/Headers (= 3.3.0)
+  - Realm/Headers (3.3.0)
+  - RealmSwift (3.3.0):
+    - Realm (= 3.3.0)
 
 DEPENDENCIES:
   - AFNetworking
@@ -35,8 +35,8 @@ DEPENDENCIES:
 SPEC CHECKSUMS:
   AFNetworking: 8ac6017b94ea105479f7776e5288e48ae9c59bb4
   Particle-SDK: d08e4a9e42c927bd997cd4817e5a01894ace4187
-  Realm: 42d1c38a5b1bbcc828b48a7ce702cb86fc68adf4
-  RealmSwift: d31937ca6a6ee54acde64ec839523c0a3c04924b
+  Realm: 7d74ad6c5020432f58fe5e1df90bb6d97b2c7fef
+  RealmSwift: b2fa31a09c22e246026766557405505eeaad2b01
 
 PODFILE CHECKSUM: ed4adc7eff4f0c1152af09656601fe380795f9f9
 

@@ -21,7 +21,7 @@ import LoginWithAmazon
 
 class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate, MFMailComposeViewControllerDelegate, AIAuthenticationDelegate {
     
-    let kMotionUpdateInterval = 0.2
+
 
     var nearIntersection = false
     let locationManager = CLLocationManager()
@@ -37,9 +37,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     var polling: Bool = false
     var nearestIntersection: CLLocation?
     var lastLocation: CLLocation?
-    var accelerometerReadings = [String]()
-    var gyroscopeReadings = [String]()
-    var motionReadings = [String]()
     fileprivate let motionManager = CMMotionManager()
     let formatter = DateFormatter()
     var pause: Bool = false
@@ -48,7 +45,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     var pollServerTimer: Timer?
     var initialAttitude: CMAttitude?
     let lwa = LoginWithAmazonProxy.sharedInstance
-    var myPhoton : ParticleDevice?
+    var electron : ParticleDevice?
     
     @IBOutlet weak var triggerRelayButton: UIButton!
     @IBOutlet weak var pollServerButton: UIButton!
@@ -117,10 +114,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
 
         if locationManager.location != nil {
-            centerMapOnLocation(location: locationManager.location!)
+            MapHelper.centerMapOnLocation(mapView: self.mapView, location: locationManager.location!)
         }
         initRealm()
-        setupMapView()
+        //setupMapView()
+        MapHelper.setupMapView(mapView: mapView, delegate: self, markers: Array(self.intersections))
         print(Realm.Configuration.defaultConfiguration.fileURL!)
         
         if ParticleCloud.sharedInstance().injectSessionAccessToken(token!) {
@@ -149,122 +147,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         pollServerButton.isEnabled = true
     }
 
-    /**
-     *  Configure the sensor data callback.
-     */
-    fileprivate func startMotionUpdates() {
-        if motionManager.isDeviceMotionAvailable {
-            // deviceMotion combines accelerometer and gyroscope data
-            motionManager.deviceMotionUpdateInterval = kMotionUpdateInterval
-            motionManager.startDeviceMotionUpdates(to: OperationQueue.main) { (motionData, error) in
-                self.report(motion: motionData)
-                self.log(error: error)
-            }
-        }
-        else {
-            // only handle accelerometer and gyro separately if device motion is unavailable
-            if motionManager.isAccelerometerAvailable {
-                motionManager.accelerometerUpdateInterval = kMotionUpdateInterval
-                motionManager.startAccelerometerUpdates(to: OperationQueue.main) { (accelerometerData, error) in
-                    self.report(acceleration: accelerometerData?.acceleration)
-                    self.log(error: error)
-                }
-            }
-            
-            if motionManager.isGyroAvailable {
-                motionManager.gyroUpdateInterval = kMotionUpdateInterval
-                motionManager.startGyroUpdates(to: OperationQueue.main) { (gyroData, error) in
-                    self.report(rotationRate: gyroData?.rotationRate)
-                    self.log(error: error)
-                }
-            }
-        }
-    }
-    
-    fileprivate func stopMotionUpdates() {
-        if motionManager.isAccelerometerActive {
-            motionManager.stopAccelerometerUpdates()
-        }
-
-        if motionManager.isGyroActive {
-            motionManager.stopGyroUpdates()
-        }
-        
-        if motionManager.isDeviceMotionActive {
-            motionManager.stopDeviceMotionUpdates()
-        }
-    }
-    
-    /**
-     Report the device motion sensor data.
-     
-     - parameter motion: A `CMDeviceMotion` holding the sensor data to report.
-     */
-    internal func report(motion: CMDeviceMotion?) {
-        var xString = motion?.gravity.x != nil ? String(format: "%.2f", arguments: [(motion?.gravity.x)!]): "?"
-        var yString = motion?.gravity.y != nil ? String(format: "%.2f", arguments: [(motion?.gravity.y)!]): "?"
-        var zString = motion?.gravity.z != nil ? String(format: "%.2f", arguments: [(motion?.gravity.z)!]): "?"
-        var text = "\(formatter.string(from: NSDate() as Date)),y,\(xString),\(yString),\(zString)"
-        motionReadings.append(text)
-        
-        xString = motion?.userAcceleration.x != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.x)!]): "?"
-        yString = motion?.userAcceleration.y != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.y)!]): "?"
-        zString = motion?.userAcceleration.z != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.z)!]): "?"
-        text = "\(formatter.string(from: NSDate() as Date)),a,\(xString),\(yString),\(zString)"
-        motionReadings.append(text)
-
-        xString = motion?.rotationRate.x != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.x)!]): "?"
-        yString = motion?.rotationRate.y != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.y)!]): "?"
-        zString = motion?.rotationRate.z != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.z)!]): "?"
-        text = "\(formatter.string(from: NSDate() as Date)),g,\(xString),\(yString),\(zString)"
-        motionReadings.append(text)
-    }
-    
-    /**
-     Sets acceleration data values to a specified `DataTableSection`.
-     
-     - parameter acceleration: A `CMAcceleration` holding the values to set.
-     - parameter section:      Section these values need to be applied to.
-     */
-    internal func report(acceleration: CMAcceleration?) {
-        let xString = acceleration?.x != nil ? String(format: "%.2f", arguments: [acceleration!.x]): "?"
-        let yString = acceleration?.y != nil ? String(format: "%.2f", arguments: [acceleration!.y]): "?"
-        let zString = acceleration?.z != nil ? String(format: "%.2f", arguments: [acceleration!.z]): "?"
-        
-        let text = "\(formatter.string(from: NSDate() as Date)),a,\(xString),\(yString),\(zString)"
-        accelerometerReadings.append(text)
-    }
-    
-    /**
-     Sets rotation rate data values to a specified `DataTableSection`.
-     
-     - parameter rotationRate: A `CMRotationRate` holding the values to set.
-     - parameter section:      Section these values need to be applied to.
-     */
-    internal func report(rotationRate: CMRotationRate?) {
-        let xString = rotationRate?.x != nil ? String(format: "%.2f", arguments: [rotationRate!.x]): "?"
-        let yString = rotationRate?.y != nil ? String(format: "%.2f", arguments: [rotationRate!.y]): "?"
-        let zString = rotationRate?.z != nil ? String(format: "%.2f", arguments: [rotationRate!.z]): "?"
-        
-        let text = "\(formatter.string(from: NSDate() as Date)),g,\(xString),\(yString),\(zString)"
-        gyroscopeReadings.append(text)
-    }
-    
-    /**
-     Logs an error in a consistent format.
-     
-     - parameter error:  Error value.
-     - parameter sensor: `DeviceSensor` that triggered the error.
-     */
-    fileprivate func log(error: Error?) {
-        guard let error = error else { return }
-        
-        NSLog("Error reading sensor data: \n \(error) \n")
-    }
-    
     override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
         if motion == .motionShake {
-            self.updateTextView(text: "shake gesture detected")
+            self.infoLabel.text = "shake gesture detected"
         }
     }
     
@@ -280,15 +165,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         let bottom = NSMakeRange(textView.text.count - 1, 1)
         textView.scrollRangeToVisible(bottom)
     }
-    
-    let regionRadius: CLLocationDistance = 1000
-    func centerMapOnLocation(location: CLLocation) {
-        let coordinateRegion = MKCoordinateRegionMakeWithDistance(location.coordinate,
-                                                                  regionRadius, regionRadius)
-        mapView.setRegion(coordinateRegion, animated: true)
-    }
-    
-    
+
     func getDevices() {
         ParticleCloud.sharedInstance().getDevices {
             (devices:[ParticleDevice]?, error:Error?) -> Void in
@@ -299,7 +176,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 if let d = devices {
                     for device in d {
                         if device.name == "beacon_2" {
-                            self.myPhoton = device
+                            self.electron = device
                             self.updateTextView(text: "found \(device.name!)")
                             self.pollServerButton.isEnabled = true
                             self.triggerRelayButton.isEnabled = true
@@ -310,59 +187,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
     }
     
-    func setupMapView() {
-        mapView.delegate = self
-        mapView.layer.borderColor = UIColor.black.cgColor
-        mapView.layer.borderWidth = 1.0
-        for i in self.intersections {
-            // draw a circle to indicate intersection
-            let circle = MKCircle(center: i.getLocation().coordinate, radius: 10 as CLLocationDistance)
-            mapView.add(circle)
-            
-            /* for h in i.headings {
-                // draw arrows to indicate heading directions
-                let line = drawLine(start: i.getLocation(), direction: h, length: 15.0)
-                mapView.add(line)
-            } */
-        }
-    }
-    
-    func locationWithBearing(bearing:Double, distanceMeters:Double, origin:CLLocationCoordinate2D) -> CLLocationCoordinate2D {
-        let distRadians = distanceMeters / (6372797.6) // earth radius in meters
-        
-        let lat1 = origin.latitude * Double.pi / 180
-        let lon1 = origin.longitude * Double.pi / 180
-        
-        let lat2 = asin(sin(lat1) * cos(distRadians) + cos(lat1) * sin(distRadians) * cos(bearing))
-        let lon2 = lon1 + atan2(sin(bearing) * sin(distRadians) * cos(lat1), cos(distRadians) - sin(lat1) * sin(lat2))
-        
-        return CLLocationCoordinate2D(latitude: lat2 * 180 / Double.pi, longitude: lon2 * 180 / Double.pi)
-    }
-    
-    internal func drawLine(start: CLLocation, direction: Double, length: Double) -> MKPolyline {
-        var coords = [CLLocationCoordinate2D]()
-        
-        coords.append(start.coordinate)
-        coords.append(CLLocationCoordinate2D(latitude: 44.040127, longitude: -123.080199))
-        //coords.append(locationWithBearing(bearing: direction, distanceMeters: length, origin: start.coordinate))
-        
-        return MKPolyline(coordinates: coords, count: coords.count)
-    }
-    
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-        if overlay is MKCircle {
-            let circle = MKCircleRenderer(overlay: overlay)
-            circle.strokeColor = UIColor.red
-            circle.fillColor = UIColor(red: 255, green: 0, blue: 0, alpha: 0.1)
-            circle.lineWidth = 1
-            return circle
-        } else if overlay is MKPolyline {
-            let line = MKPolylineRenderer(overlay: overlay)
-            line.strokeColor = UIColor.red
-            line.lineWidth = 2.0
-            return line
-        }
-        return MKOverlayRenderer()
+        return MapHelper.mapView(mapView: mapView, overlay: overlay)
     }
 
     func initRealm() {
@@ -475,7 +301,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         lastLocation = myLocation
         
         if polling {
-            centerMapOnLocation(location: myLocation)
+            MapHelper.centerMapOnLocation(mapView: self.mapView, location: myLocation)
         }
         if !pause {
             displayClosestIntersection()
@@ -506,7 +332,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 
                 if dist < distanceThreshold && polling {
                     // auto-poll server within quarter mile
-                    if myPhoton != nil && !pause {
+                    if electron != nil && !pause {
                         //readLedState()
                         readLoopState(silent: true)
                         // only auto-poll at most every 3 seconds
@@ -548,7 +374,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
     
     func readLedState() {
-        myPhoton!.getVariable("led_state", completion: { (result:Any?, error:Error?) -> Void in
+        electron!.getVariable("led_state", completion: { (result:Any?, error:Error?) -> Void in
             if let _ = error {
                 // self.relayStateView.backgroundColor = UIColor.gray
                 self.updateTextView(text: "failed reading led status from device")
@@ -568,7 +394,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
     
     func readLoopState(silent: Bool) {
-        myPhoton!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
+        electron!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
             if let _ = error {
                 if (!silent) {
                     self.updateTextView(text: "failed reading loop state from device")
@@ -592,7 +418,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
     
     func toggleLedState() {
-        let task = myPhoton!.callFunction("toggle_led", withArguments: nil) { (resultCode : NSNumber?, error : Error?) -> Void in
+        let task = electron!.callFunction("toggle_led", withArguments: nil) { (resultCode : NSNumber?, error : Error?) -> Void in
             if (error == nil) {
                 self.updateTextView(text: "toggle led successful")
             }
@@ -639,10 +465,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         
         var csvText = "Date,Type,x,y,z\n"
         if motionManager.isDeviceMotionAvailable {
-            let count = motionReadings.count
+            let count = MotionHelper.motionReadings.count
             
             if count > 0 {
-                for reading in motionReadings {
+                for reading in MotionHelper.motionReadings {
                     let newLine = "\(reading)\n"
                     csvText.append(newLine)
                 }
@@ -651,15 +477,15 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             }
         }
         else {
-            let count = accelerometerReadings.count
+            let count = MotionHelper.accelerometerReadings.count
             
             if count > 0 {
-                for reading in accelerometerReadings {
+                for reading in MotionHelper.accelerometerReadings {
                     let newLine = "\(reading)\n"
                     csvText.append(newLine)
                 }
                 
-                for reading in gyroscopeReadings {
+                for reading in MotionHelper.gyroscopeReadings {
                     let newLine = "\(reading)\n"
                     csvText.append(newLine)
                 }
@@ -712,7 +538,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     func triggerRelay(relayNumber: String) {
         self.updateTextView(text: "triggering relay #\(relayNumber)")
         
-        let task = myPhoton!.callFunction("relay_on", withArguments: [relayNumber]) { (resultCode : NSNumber?, error : Error?) -> Void in
+        let task = electron!.callFunction("relay_on", withArguments: [relayNumber]) { (resultCode : NSNumber?, error : Error?) -> Void in
             if (error == nil) {
                 self.readLoopState(silent: false)
             }
@@ -736,7 +562,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             LoginWithAmazonToken.sharedInstance.loginWithAmazonToken = apiResult.result as! String?
             let storyboard = UIStoryboard(name: "Main", bundle: nil)
             let controller = storyboard.instantiateViewController(withIdentifier: "AlexaViewController") as! AlexaViewController
-            controller.myPhoton = self.myPhoton
+            controller.electron = self.electron
             controller.intersections = self.intersections
             self.present(controller, animated: true, completion: nil)
         case API.clearAuthorizationState:
@@ -752,11 +578,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     
     @IBAction func recordButton(_ sender: Any) {
         if recordSensors.title(for: .normal) == "record" {
-            startMotionUpdates()
+            MotionHelper.startMotionUpdates(motionManager: self.motionManager)
             recordSensors.setImage(UIImage(named: "stop-30px.png"), for: .normal)
             recordSensors.setTitle("stop", for: .normal)
         } else if recordSensors.title(for: .normal) == "stop" {
-            stopMotionUpdates()
+            MotionHelper.stopMotionUpdates(motionManager: self.motionManager)
             recordSensors.setImage(UIImage(named: "email-30px.png"), for: .normal)
             recordSensors.setTitle("send", for: .normal)
         } else {

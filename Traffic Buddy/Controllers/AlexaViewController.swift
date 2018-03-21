@@ -8,12 +8,14 @@
 
 import UIKit
 import AVFoundation
+import CoreMotion
 import MapKit
+import MessageUI
 import Particle_SDK
 import Realm
 import RealmSwift
 
-class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecorderDelegate, MKMapViewDelegate {
+class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecorderDelegate, MFMailComposeViewControllerDelegate, MKMapViewDelegate, CLLocationManagerDelegate {
 
     @IBOutlet weak var recordButton: UIButton!
     @IBOutlet weak var recordSensorsButton: UIButton!
@@ -24,17 +26,21 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     @IBOutlet weak var relayStateView: UIView!
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var mapView: MKMapView!
-    var myPhoton : ParticleDevice?
-    var pollServerTimer: Timer?
-    var intersections: Results<Intersection>!
+    @IBOutlet weak var locationLabel: UILabel!
+    @IBOutlet weak var nearestIntersectionLabel: UILabel!
     
-    /*
-    @IBOutlet weak var pingBtn: UIButton!
-    @IBOutlet weak var startDownchannelBtn: UIButton!
-    @IBOutlet weak var pushToTalkBtn: UIButton!
-    @IBOutlet weak var wakeWordBtn: UIButton!
-    @IBOutlet weak var debugLabel: UILabel!
-    */
+    var electron : ParticleDevice?
+    var pollServerTimer: Timer?
+    var autoPollTimer: Timer?
+    var locationTimer: Timer?
+    var intersections: Results<Intersection>!
+    var polling = false
+    var pause = false
+    var nearIntersection = false
+    let locationManager = CLLocationManager()
+    let distanceThreshold = 200.0 // 1320.0 == quarter mile
+    fileprivate let motionManager = CMMotionManager()
+    
     private let audioSession = AVAudioSession.sharedInstance()
     private var audioRecorder: AVAudioRecorder!
     private var audioPlayer: AVAudioPlayer!
@@ -68,11 +74,38 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         
         self.becomeFirstResponder()
         
-        if myPhoton != nil {
+        if electron != nil {
             self.pollServerButton.isEnabled = true
             self.triggerRelayButton.isEnabled = true
         }
-        setupMapView()
+        MapHelper.setupMapView(mapView: mapView, delegate: self, markers: Array(self.intersections))
+        
+        if CLLocationManager.locationServicesEnabled() {
+            locationManager.activityType = CLActivityType.fitness
+            locationManager.allowsBackgroundLocationUpdates = true
+            locationManager.delegate = self
+            locationManager.desiredAccuracy = kCLLocationAccuracyBest
+            locationManager.distanceFilter = 0.5
+            locationManager.pausesLocationUpdatesAutomatically = true
+            
+            locationTimer = Timer.scheduledTimer(timeInterval: 2,
+                                                 target: self,
+                                                 selector: #selector(self.updateLocation),
+                                                 userInfo: nil,
+                                                 repeats: true)
+        }
+        
+        if locationManager.location != nil {
+            MapHelper.centerMapOnLocation(mapView: self.mapView, location: locationManager.location!)
+        }
+    }
+    
+    @objc func updateAutoPollPause() {
+        pause = false
+    }
+    
+    @objc func updateLocation() {
+        locationManager.startUpdatingLocation()
     }
     
     override var canBecomeFirstResponder: Bool {
@@ -103,12 +136,6 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         }
     }
 
-    /*
-    @IBAction func onClickStartDownchannelBtn(_ sender: Any) {
-        avsClient.startDownchannel()
-    }
-    */
-    
     @IBAction func recordButtonClick(_ sender: Any) {
         
         if (self.isRecording) {
@@ -149,6 +176,122 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         textView.scrollRangeToVisible(bottom)
     }
     
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        let myLocation: CLLocation = locations.first!
+        let locValue:CLLocationCoordinate2D = myLocation.coordinate
+        var latString = "0°"
+        var longString = "0°"
+        
+        if locValue.latitude > 0 {
+            // north of equator
+            latString = "\(locValue.latitude)° N"
+        }
+        else {
+            // south of equator
+            latString = "\(-locValue.latitude)° S"
+        }
+        
+        if locValue.longitude > 0 {
+            // east of prime meridian
+            longString = "\(locValue.longitude)° E"
+        }
+        else {
+            // west of prime meridian
+            longString = "\(-locValue.longitude)° W"
+        }
+        
+        locationLabel.text = "\(latString) \(longString)"
+
+        //lastLocation = myLocation
+        
+        if polling {
+            MapHelper.centerMapOnLocation(mapView: self.mapView, location: myLocation)
+        }
+        if !pause {
+            displayClosestIntersection()
+        }
+        // stop updating location until next locationTimer tick
+        locationManager.stopUpdatingLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Did location updates is called but failed getting location \(error)")
+    }
+    
+    func metersToFeet(from: Double) -> Double {
+        return from * 3.28084
+    }
+    
+    func closestLocation(locations: [CLLocation], closestToLocation location: CLLocation) -> CLLocation? {
+        if let closestLocation = locations.min(by: { location.distance(from: $0) < location.distance(from: $1) }) {
+            return closestLocation
+        } else {
+            nearestIntersectionLabel.text = "locations is empty"
+            return nil
+        }
+    }
+    
+    func displayClosestIntersection()
+    {
+        if CLLocationManager.locationServicesEnabled() {
+            locationManager.requestLocation()
+            //let kalmanLocation = self.hcKalmanFilter?.processState(currentLocation: locationManager.location!)
+            
+            // make CLLocation array from intersections
+            var coords = [CLLocation]()
+            for i in (0...intersections.count-1) {
+                coords.append(intersections[i].getLocation())
+            }
+            
+            let nearest = closestLocation(locations: coords, closestToLocation: locationManager.location!)
+            if nearest != nil {
+                let dist = metersToFeet(from: nearest!.distance(from: locationManager.location!))
+                
+                if dist < distanceThreshold && polling {
+                    // auto-poll server within quarter mile
+                    if electron != nil && !pause {
+                        //readLedState()
+                        readLoopState(silent: true)
+                        // only auto-poll at most every 3 seconds
+                        autoPollTimer = Timer.scheduledTimer(timeInterval: 3,
+                                                             target: self,
+                                                             selector: #selector(self.updateAutoPollPause),
+                                                             userInfo: nil,
+                                                             repeats: false)
+                        pause = true
+                    }
+                    
+                    // if the user is not already near an intersection, vibrate to notify
+                    if dist < 50.0 && !nearIntersection {
+                        nearIntersection = true
+                        triggerRelay(relayNumber: "1")
+                        AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
+                        
+                    }
+                    
+                    // if the user was previously near an intersection, vibrate to notify
+                    if dist > 50.0 && nearIntersection {
+                        nearIntersection = false
+                        AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
+                    }
+                } else {
+                    // polling = false
+                    self.relayStateView.backgroundColor = UIColor.white
+                }
+                
+                for i in (0...intersections.count-1) {
+                    if intersections[i].latitude == nearest!.coordinate.latitude &&
+                        intersections[i].longitude == nearest!.coordinate.longitude {
+                        nearestIntersectionLabel.text = String(format: "%.0f feet from \(intersections[i].title)", dist)
+                        break
+                    }
+                }
+            }
+        }
+    }
+    
+    
     func prepareAudioSession() {
         do {
             let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -172,87 +315,8 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         }
     }
     
-    func setupMapView() {
-        mapView.delegate = self
-        mapView.layer.borderColor = UIColor.black.cgColor
-        mapView.layer.borderWidth = 1.0
-        for i in self.intersections {
-            // draw a circle to indicate intersection
-            let circle = MKCircle(center: i.getLocation().coordinate, radius: 10 as CLLocationDistance)
-            mapView.add(circle)
-            
-            for h in i.headings {
-                // draw arrows to indicate heading directions
-                let line = drawLine(start: i.getLocation(), direction: h, length: 15.0)
-                mapView.add(line)
-            }
-        }
-    }
-    
-    func degreesToRadians(degrees: Double) -> Double { return degrees * .pi / 180.0 }
-    func radiansToDegrees(radians: Double) -> Double { return radians * 180.0 / .pi }
-    
-    func getBearingBetweenTwoPoints1(point1 : CLLocation, point2 : CLLocation) -> Double {
-        
-        let lat1 = degreesToRadians(degrees: point1.coordinate.latitude)
-        let lon1 = degreesToRadians(degrees: point1.coordinate.longitude)
-        
-        let lat2 = degreesToRadians(degrees: point2.coordinate.latitude)
-        let lon2 = degreesToRadians(degrees: point2.coordinate.longitude)
-        
-        let dLon = lon2 - lon1
-        
-        let y = sin(dLon) * cos(lat2)
-        let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
-        let radiansBearing = atan2(y, x)
-        
-        return radiansToDegrees(radians: radiansBearing)
-    }
-    
-    // double precision arithmetic is too inaccurate to calculate location coordinates
-    func locationWithBearing(bearing:Double, distanceMeters:Double, origin:CLLocationCoordinate2D) -> CLLocationCoordinate2D {
-        let distRadians = distanceMeters / (6372797.6) // earth radius in meters
-        
-        let lat1 = origin.latitude * Double.pi / 180.0
-        let lon1 = origin.longitude * Double.pi / 180.0
-        
-        let lat2 = asin(sin(lat1) * cos(distRadians) + cos(lat1) * sin(distRadians) * cos(bearing))
-        let lon2 = lon1 + atan2(sin(bearing) * sin(distRadians) * cos(lat1), cos(distRadians) - sin(lat1) * sin(lat2))
-        
-        let coord = CLLocationCoordinate2D(latitude: lat2 * 180.0 / Double.pi, longitude: lon2 * 180.0 / Double.pi)
-        print("locationWithBearing: \(coord.latitude),\(coord.longitude)")
-        return coord
-    }
-    
-    internal func drawLine(start: CLLocation, direction: Double, length: Double) -> MKPolyline {
-        var coords = [CLLocationCoordinate2D]()
-        
-        //print(getBearingBetweenTwoPoints1(point1: start, point2: CLLocation(latitude: 44.039963, longitude: -123.080199)))
-        
-        //coords.append(CLLocationCoordinate2D(latitude: 44.039963, longitude: -123.080199))
-        //coords.append(locationWithBearing(bearing: 180.6147, distanceMeters: length, origin: start.coordinate))
-        coords.append(locationWithBearing(bearing: getBearingBetweenTwoPoints1(point1: start, point2: CLLocation(latitude: 44.039963, longitude: -123.080199)), distanceMeters: length, origin: start.coordinate))
-        coords.append(start.coordinate)
-        coords.append(CLLocationCoordinate2D(latitude: 44.040127, longitude: -123.080199))
-        //coords.append(locationWithBearing(bearing: 359.5753, distanceMeters: length, origin: start.coordinate))
-
-        return MKPolyline(coordinates: coords, count: coords.count)
-    }
-    
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-        if overlay is MKCircle {
-            let circle = MKCircleRenderer(overlay: overlay)
-            circle.strokeColor = UIColor.red
-            circle.fillColor = UIColor(red: 255, green: 0, blue: 0, alpha: 0.1)
-            circle.lineWidth = 1
-            return circle
-        } else if overlay is MKPolyline {
-            let line = MKPolylineRenderer(overlay: overlay)
-            line.strokeColor = UIColor.red
-            line.lineWidth = 2.0
-            return line
-        }
-        return MKOverlayRenderer()
+        return MapHelper.mapView(mapView: mapView, overlay: overlay)
     }
     
     @objc func startListening() {
@@ -418,7 +482,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     }
     
     func readLoopState(silent: Bool) {
-        myPhoton!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
+        electron!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
             if let _ = error {
                 if (!silent) {
                     self.updateTextView(text: "failed reading loop state from device")
@@ -444,7 +508,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     func triggerRelay(relayNumber: String) {
         self.updateTextView(text: "triggering relay #\(relayNumber)")
         
-        let task = myPhoton!.callFunction("relay_on", withArguments: [relayNumber]) { (resultCode : NSNumber?, error : Error?) -> Void in
+        let task = electron!.callFunction("relay_on", withArguments: [relayNumber]) { (resultCode : NSNumber?, error : Error?) -> Void in
             if (error == nil) {
                 self.readLoopState(silent: false)
             }
@@ -458,20 +522,83 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         }
     }
     
+    
+    func exportCsv() {
+        let fileName = "accelerometer.csv"
+        let path = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
+        
+        var csvText = "Date,Type,x,y,z\n"
+        if motionManager.isDeviceMotionAvailable {
+            let count = MotionHelper.motionReadings.count
+            
+            if count > 0 {
+                for reading in MotionHelper.motionReadings {
+                    let newLine = "\(reading)\n"
+                    csvText.append(newLine)
+                }
+            } else {
+                //showErrorAlert("Error", msg: "There is no data to export")
+            }
+        }
+        else {
+            let count = MotionHelper.accelerometerReadings.count
+            
+            if count > 0 {
+                for reading in MotionHelper.accelerometerReadings {
+                    let newLine = "\(reading)\n"
+                    csvText.append(newLine)
+                }
+                
+                for reading in MotionHelper.gyroscopeReadings {
+                    let newLine = "\(reading)\n"
+                    csvText.append(newLine)
+                }
+            } else {
+                //showErrorAlert("Error", msg: "There is no data to export")
+            }
+        }
+        
+        do {
+            try csvText.write(to: path!, atomically: true, encoding: String.Encoding.utf8)
+            
+            if MFMailComposeViewController.canSendMail() {
+                let emailController = MFMailComposeViewController()
+                emailController.mailComposeDelegate = self
+                emailController.setToRecipients(["bwilli11@uoregon.edu"])
+                emailController.setSubject("Accelerometer data")
+                emailController.setMessageBody("readings from accelerometer and gyro", isHTML: false)
+                
+                if let data = NSData(contentsOfFile: "\(NSTemporaryDirectory())\(fileName)") {
+                    emailController.addAttachmentData(data as Data, mimeType: "text/csv", fileName: fileName)
+                    
+                }
+                
+                present(emailController, animated: true, completion: nil)
+            }
+        } catch {
+            print("Failed to create file")
+            print("\(error)")
+        }
+    }
+    
+    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith: MFMailComposeResult, error: Error?) {
+        controller.dismiss(animated: true, completion: nil)
+    }
+    
     @IBAction func startTripClick(_ sender: Any) {
         if startButton.titleLabel?.text == "Start Trip" {
             startButton.setTitle("Stop Trip", for: .normal)
-            //polling = true
+            polling = true
             self.updateTextView(text: "starting bicycle trip")
         }
         else if startButton.titleLabel?.text == "Stop Trip" {
             startButton.setTitle("Start Trip", for: .normal)
             relayStateView.backgroundColor = UIColor.white
             //autoPollTimer?.invalidate()
-            //locationTimer?.invalidate()
+            locationTimer?.invalidate()
             pollServerTimer?.invalidate()
-            //pause = false
-            //polling = false
+            pause = false
+            polling = false
             self.updateTextView(text: "stopping bicycle trip")
         }
     }
@@ -494,16 +621,16 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     
     @IBAction func recordSensorsButtonClick(_ sender: Any) {
         if recordSensorsButton.title(for: .normal) == "record" {
-            //startMotionUpdates()
+            MotionHelper.startMotionUpdates(motionManager: self.motionManager)
             recordSensorsButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
             recordSensorsButton.setTitle("stop", for: .normal)
         } else if recordSensorsButton.title(for: .normal) == "stop" {
-            //stopMotionUpdates()
+            MotionHelper.stopMotionUpdates(motionManager: self.motionManager)
             recordSensorsButton.setImage(UIImage(named: "email-30px.png"), for: .normal)
             recordSensorsButton.setTitle("send", for: .normal)
         } else {
             // e-mail csv file
-            //exportCsv()
+            exportCsv()
             recordSensorsButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
             recordSensorsButton.setTitle("record", for: .normal)
         }

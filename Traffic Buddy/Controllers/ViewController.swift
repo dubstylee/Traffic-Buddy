@@ -59,6 +59,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     @IBOutlet weak var startButton: UIButton!
     @IBOutlet weak var relayStateView: UIView!
     @IBOutlet weak var textView: UITextView!
+    @IBOutlet weak var relayStateLabel: UITextView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -359,7 +360,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                     }
                 } else {
                     // polling = false
-                    self.relayStateView.backgroundColor = UIColor.white
+                    // self.relayStateView.backgroundColor = UIColor.white
                 }
 
                 for i in (0...intersections.count-1) {
@@ -376,16 +377,19 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     func readLedState() {
         electron!.getVariable("led_state", completion: { (result:Any?, error:Error?) -> Void in
             if let _ = error {
-                // self.relayStateView.backgroundColor = UIColor.gray
+                self.relayStateView.backgroundColor = UIColor.gray
                 self.updateTextView(text: "failed reading led status from device")
+                self.relayStateLabel.text = "Relay State\nUnknown";
             }
             else {
                 if let status = result as? String {
                     if status == "on" {
                         self.relayStateView.backgroundColor = UIColor.green
+                        self.relayStateLabel.text = "Relay State\nOn";
                     }
                     else {
                         self.relayStateView.backgroundColor = UIColor.red
+                        self.relayStateLabel.text = "Relay State\nOff";
                     }
                     self.updateTextView(text: "led is \(status)")
                 }
@@ -404,9 +408,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 if let status = result as? Int {
                     if status == 1 {
                         self.relayStateView.backgroundColor = UIColor.green
+                        self.relayStateLabel.text = "Relay State\nOn";
                     }
                     else {
                         self.relayStateView.backgroundColor = UIColor.red
+                        self.relayStateLabel.text = "Relay State\nOff";
                     }
                     
                     if (!silent) {
@@ -460,7 +466,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
     
     func exportCsv() {
-        let fileName = "accelerometer.csv"
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMddHHmmss"
+        let dateString = formatter.string(from: Date())
+        let fileName = "sensor\(dateString).csv"
         let path = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
         
         var csvText = "Date,Type,x,y,z\n"

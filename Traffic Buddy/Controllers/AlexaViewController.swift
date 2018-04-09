@@ -28,6 +28,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
+    @IBOutlet weak var relayStateLabel: UITextView!
     
     var electron : ParticleDevice?
     var pollServerTimer: Timer?
@@ -277,7 +278,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
                     }
                 } else {
                     // polling = false
-                    self.relayStateView.backgroundColor = UIColor.white
+                    // self.relayStateView.backgroundColor = UIColor.white
                 }
                 
                 for i in (0...intersections.count-1) {
@@ -492,9 +493,11 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
                 if let status = result as? Int {
                     if status == 1 {
                         self.relayStateView.backgroundColor = UIColor.green
+                        self.relayStateLabel.text = "Relay State\nOn"
                     }
                     else {
                         self.relayStateView.backgroundColor = UIColor.red
+                        self.relayStateLabel.text = "Relay State\nOff"
                     }
                     
                     if (!silent) {
@@ -524,7 +527,10 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     
     
     func exportCsv() {
-        let fileName = "accelerometer.csv"
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMddHHmmss"
+        let dateString = formatter.string(from: Date())
+        let fileName = "sensor\(dateString).csv"
         let path = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
         
         var csvText = "Date,Type,x,y,z\n"

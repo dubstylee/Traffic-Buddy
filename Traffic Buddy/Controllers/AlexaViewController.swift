@@ -8,8 +8,10 @@
 
 import UIKit
 import AVFoundation
+import AWSS3
 import CoreMotion
 import MapKit
+import MediaPlayer
 import MessageUI
 import Particle_SDK
 import Realm
@@ -40,6 +42,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     var nearIntersection = false
     let locationManager = CLLocationManager()
     let distanceThreshold = 200.0 // 1320.0 == quarter mile
+//    let transferManager = AWSS3TransferManager.default()
     fileprivate let motionManager = CMMotionManager()
     
     private let audioSession = AVAudioSession.sharedInstance()
@@ -58,6 +61,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        (MPVolumeView().subviews.filter{NSStringFromClass($0.classForCoder) == "MPVolumeSlider"}.first as? UISlider)?.setValue(1, animated: false)
         
         self.relayStateView.layer.borderColor = UIColor.black.cgColor
         self.relayStateView.layer.borderWidth = 1.0
@@ -109,36 +113,48 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         locationManager.startUpdatingLocation()
     }
     
-    override var canBecomeFirstResponder: Bool {
-        get { return true }
-    }
-    
-    override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
-        if motion == .motionShake {
-            self.infoLabel.text = "shake gesture detected"
-            avsClient.ping()
+    func wakeAlexa() {
+        do {
+            let url = Bundle.main.url(forResource: "wake", withExtension: "wav")
+            let wake = try Data(contentsOf: url!)
             
-            do {
-                //let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                //let fileURL = directory.appendingPathComponent(Settings.Audio.WAKE_FILE_NAME)
-                
-                let url = Bundle.main.url(forResource: "wake", withExtension: "wav")
-                let wake = try Data(contentsOf: url!)
-                
-                avsClient.postRecording(audioData: wake)
-                
-                // https://developer.amazon.com/docs/alexa-voice-service/recommended-media-support.html
-                // mp3, aac, wav, etc.
-                // try avsClient.postRecording(audioData: Data(contentsOf: fileURL))
-            } catch let ex {
-                print("AVS Client threw an error: \(ex.localizedDescription)")
-                self.infoLabel.text = "wake word audio file not found"
-            }
+            avsClient.postRecording(audioData: wake)
+            
+            // https://developer.amazon.com/docs/alexa-voice-service/recommended-media-support.html
+            // mp3, aac, wav, etc.
+            // try avsClient.postRecording(audioData: Data(contentsOf: fileURL))
+        } catch let ex {
+            print("AVS Client threw an error: \(ex.localizedDescription)")
+            self.infoLabel.text = "wake word audio file not found"
         }
     }
 
+//    override var canBecomeFirstResponder: Bool {
+//        get { return true }
+//    }
+//
+//    override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
+//        if motion == .motionShake {
+//            self.infoLabel.text = "shake gesture detected"
+//            avsClient.ping()
+//
+//            do {
+//                let url = Bundle.main.url(forResource: "wake", withExtension: "wav")
+//                let wake = try Data(contentsOf: url!)
+//
+//                avsClient.postRecording(audioData: wake)
+//
+//                // https://developer.amazon.com/docs/alexa-voice-service/recommended-media-support.html
+//                // mp3, aac, wav, etc.
+//                // try avsClient.postRecording(audioData: Data(contentsOf: fileURL))
+//            } catch let ex {
+//                print("AVS Client threw an error: \(ex.localizedDescription)")
+//                self.infoLabel.text = "wake word audio file not found"
+//            }
+//        }
+//    }
+
     @IBAction func recordButtonClick(_ sender: Any) {
-        
         if (self.isRecording) {
             audioRecorder.stop()
             
@@ -148,6 +164,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
 
             do {
                 print(audioRecorder.url)
+                
                 try avsClient.postRecording(audioData: Data(contentsOf: audioRecorder.url))
             } catch let ex {
                 print("AVS Client threw an error: \(ex.localizedDescription)")
@@ -177,7 +194,42 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         textView.scrollRangeToVisible(bottom)
     }
     
-    
+    internal func s3Upload(url: URL) {
+        let credentialsProvider = AWSStaticCredentialsProvider(accessKey: Settings.S3.S3_ACCESS_KEY, secretKey: Settings.S3.S3_SECRET_KEY)
+        let configuration = AWSServiceConfiguration(region:.USEast1, credentialsProvider:credentialsProvider)
+
+        AWSServiceManager.default().defaultServiceConfiguration = configuration
+        let transferManager = AWSS3TransferManager.default()
+
+        let uploadingFileURL = url
+        let uploadRequest = AWSS3TransferManagerUploadRequest()!
+
+        uploadRequest.bucket = "cycle-buddy-reports"
+        uploadRequest.key = "test.wav"
+        uploadRequest.body = uploadingFileURL
+
+        transferManager.upload(uploadRequest).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+
+            if let error = task.error as NSError? {
+                if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
+                    switch code {
+                    case .cancelled, .paused:
+                        break
+                    default:
+                        print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
+                    }
+                } else {
+                    print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
+                }
+                return nil
+            }
+
+            _ = task.result
+            print("Upload complete for: \(String(describing: uploadRequest.key))")
+            return nil
+        })
+    }
+
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         let myLocation: CLLocation = locations.first!
         let locValue:CLLocationCoordinate2D = myLocation.coordinate
@@ -237,7 +289,6 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     {
         if CLLocationManager.locationServicesEnabled() {
             locationManager.requestLocation()
-            //let kalmanLocation = self.hcKalmanFilter?.processState(currentLocation: locationManager.location!)
             
             // make CLLocation array from intersections
             var coords = [CLLocation]()

@@ -22,6 +22,7 @@
 		D30D4AA71FA6A812004EC057 /* UserLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D30D4AA61FA6A812004EC057 /* UserLocation.swift */; };
 		D349B36F205DCD50007442F6 /* wake.wav in Resources */ = {isa = PBXBuildFile; fileRef = D349B36E205DCD4F007442F6 /* wake.wav */; };
 		D34D67101FD5161C003E1CEB /* Speedometer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34D670F1FD5161C003E1CEB /* Speedometer.swift */; };
+		D35DD257208400E400868F8D /* finish.wav in Resources */ = {isa = PBXBuildFile; fileRef = D35DD256208400E400868F8D /* finish.wav */; };
 		D361D0D71F81EB2E0060F25A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0D61F81EB2E0060F25A /* AppDelegate.swift */; };
 		D361D0D91F81EB2E0060F25A /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0D81F81EB2E0060F25A /* ViewController.swift */; };
 		D361D0DC1F81EB2E0060F25A /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D361D0DA1F81EB2E0060F25A /* Main.storyboard */; };
@@ -49,6 +50,7 @@
 		D30D4AA61FA6A812004EC057 /* UserLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserLocation.swift; sourceTree = "<group>"; };
 		D349B36E205DCD4F007442F6 /* wake.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = wake.wav; sourceTree = "<group>"; };
 		D34D670F1FD5161C003E1CEB /* Speedometer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Speedometer.swift; sourceTree = "<group>"; };
+		D35DD256208400E400868F8D /* finish.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = finish.wav; path = ../../Downloads/finish.wav; sourceTree = "<group>"; };
 		D361D0D31F81EB2E0060F25A /* Traffic Buddy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Traffic Buddy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D361D0D61F81EB2E0060F25A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D361D0D81F81EB2E0060F25A /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -98,6 +100,7 @@
 		D361D0CA1F81EB2E0060F25A = {
 			isa = PBXGroup;
 			children = (
+				D35DD256208400E400868F8D /* finish.wav */,
 				D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */,
 				D349B36E205DCD4F007442F6 /* wake.wav */,
 				D361D0D51F81EB2E0060F25A /* Traffic Buddy */,
@@ -235,6 +238,7 @@
 				D3AE0BA01FB95F1D00DCD5BA /* particle.conf in Resources */,
 				D361D0DE1F81EB2E0060F25A /* Assets.xcassets in Resources */,
 				D361D0DC1F81EB2E0060F25A /* Main.storyboard in Resources */,
+				D35DD257208400E400868F8D /* finish.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -249,6 +253,8 @@
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-Traffic Buddy/Pods-Traffic Buddy-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/AFNetworking/AFNetworking.framework",
+				"${BUILT_PRODUCTS_DIR}/AWSCore/AWSCore.framework",
+				"${BUILT_PRODUCTS_DIR}/AWSS3/AWSS3.framework",
 				"${BUILT_PRODUCTS_DIR}/Particle-SDK/Particle_SDK.framework",
 				"${BUILT_PRODUCTS_DIR}/Realm/Realm.framework",
 				"${BUILT_PRODUCTS_DIR}/RealmSwift/RealmSwift.framework",
@@ -256,6 +262,8 @@
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/AFNetworking.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/AWSCore.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/AWSS3.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Particle_SDK.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Realm.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RealmSwift.framework",

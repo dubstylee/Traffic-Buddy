@@ -33,6 +33,11 @@ struct Settings {
         static let SILENCE_THRESHOLD = -30.0 as Float
     }
     
+    struct S3 {
+        static let S3_ACCESS_KEY = "access key"
+        static let S3_SECRET_KEY = "secret key"
+    }
+    
     struct WakeWord {
         static let RESOURCE = Bundle.main.path(forResource: "common", ofType: "res")
         static let MODEL = Bundle.main.path(forResource: "alexa_02092017", ofType: "umdl")

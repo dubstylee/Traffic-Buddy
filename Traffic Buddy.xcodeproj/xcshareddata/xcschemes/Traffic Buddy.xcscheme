@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "52C342AFE5DEC24E498F7D527887F5FB"
+               BlueprintIdentifier = "BE2D92D617D3B95993360E48DD146924"
                BuildableName = "Pods_Traffic_Buddy.framework"
                BlueprintName = "Pods-Traffic Buddy"
                ReferencedContainer = "container:Pods/Pods.xcodeproj">

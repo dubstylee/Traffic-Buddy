@@ -249,19 +249,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         let myLocation: CLLocation = locations.first!
 
-        //if hcKalmanFilter == nil {
-        //    self.hcKalmanFilter = HCKalmanAlgorithm(initialLocation: myLocation)
-        //}
-        //else {
-        //    if let hcKalmanFilter = self.hcKalmanFilter {
-        //        if resetKalmanFilter == true {
-        //            hcKalmanFilter.resetKalman(newStartLocation: myLocation)
-        //            resetKalmanFilter = false
-        //        }
-        //        else {
-                    //print(myLocation.coordinate)
-                    //let kalmanLocation = hcKalmanFilter.processState(currentLocation: myLocation)
-                    //print(kalmanLocation.coordinate)
                     let locValue:CLLocationCoordinate2D = myLocation.coordinate
                     var latString = "0°"
                     var longString = "0°"
@@ -285,20 +272,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                     }
 
                     locationLabel.text = "\(latString) \(longString)"
-        //        }
-        //    }
-        //}
+
         var instantSpeed = myLocation.speed
         instantSpeed = max(instantSpeed, 0.0)
         speedInstantLabel.text = String(format: "Instant Speed: %.2f mph", (instantSpeed * metersPerSecToMilesPerHour))
 
-        /*
-        var calculatedSpeed = 0.0
-        if lastLocation != nil {
-            calculatedSpeed = lastLocation!.distance(from: myLocation) / (myLocation.timestamp.timeIntervalSince(lastLocation!.timestamp))
-            speedCalculatedLabel.text = String(format: "Calculated Speed: %.2f mph", (calculatedSpeed * metersPerSecToMilesPerHour))
-        }
-        */
         lastLocation = myLocation
         
         if polling {

@@ -72,22 +72,32 @@ class MotionHelper {
      */
     internal static func report(motion: CMDeviceMotion?, readings: inout [String]) {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
-        var xString = motion?.gravity.x != nil ? String(format: "%.2f", arguments: [(motion?.gravity.x)!]): "?"
-        var yString = motion?.gravity.y != nil ? String(format: "%.2f", arguments: [(motion?.gravity.y)!]): "?"
-        var zString = motion?.gravity.z != nil ? String(format: "%.2f", arguments: [(motion?.gravity.z)!]): "?"
-        var text = "\(formatter.string(from: NSDate() as Date)),y,\(xString),\(yString),\(zString)"
+        let acc_x = (motion?.userAcceleration.x)!
+        let acc_y = (motion?.userAcceleration.y)!
+        let acc_z = (motion?.userAcceleration.z)!
+        let yaw = (motion?.attitude.yaw)!
+        let pitch = (motion?.attitude.pitch)!
+        let roll = (motion?.attitude.roll)!
+//        let yaw = (motion?.rotationRate.x)!
+//        let pitch = (motion?.rotationRate.y)!
+//        let roll = (motion?.rotationRate.z)!
+
+        let acc = pow(acc_x, 2.0) + pow(acc_y, 2.0) + pow(acc_z, 2.0)
+        let acc_total = pow(acc, 0.5)
+        let acc_vertical = abs(acc_x * sin(roll) + acc_y * sin(pitch) - acc_z * cos(pitch) * cos(roll))
+        
+//        xString = motion?.userAcceleration.x != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.x)!]): "?"
+//        yString = motion?.userAcceleration.y != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.y)!]): "?"
+//        zString = motion?.userAcceleration.z != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.z)!]): "?"
+//        text = "\(formatter.string(from: NSDate() as Date)),a,\(xString),\(yString),\(zString)"
+        var text = "\(formatter.string(from: NSDate() as Date)),A_t,\(acc_total)"
         readings.append(text)
         
-        xString = motion?.userAcceleration.x != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.x)!]): "?"
-        yString = motion?.userAcceleration.y != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.y)!]): "?"
-        zString = motion?.userAcceleration.z != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.z)!]): "?"
-        text = "\(formatter.string(from: NSDate() as Date)),a,\(xString),\(yString),\(zString)"
-        readings.append(text)
-        
-        xString = motion?.rotationRate.x != nil ? String(format: "%.2f", arguments: [(motion?.rotationRate.x)!]): "?"
-        yString = motion?.rotationRate.y != nil ? String(format: "%.2f", arguments: [(motion?.rotationRate.y)!]): "?"
-        zString = motion?.rotationRate.z != nil ? String(format: "%.2f", arguments: [(motion?.rotationRate.z)!]): "?"
-        text = "\(formatter.string(from: NSDate() as Date)),g,\(xString),\(yString),\(zString)"
+//        xString = motion?.rotationRate.x != nil ? String(format: "%.2f", arguments: [(motion?.rotationRate.x)!]): "?"
+//        yString = motion?.rotationRate.y != nil ? String(format: "%.2f", arguments: [(motion?.rotationRate.y)!]): "?"
+//        zString = motion?.rotationRate.z != nil ? String(format: "%.2f", arguments: [(motion?.rotationRate.z)!]): "?"
+//        text = "\(formatter.string(from: NSDate() as Date)),g,\(xString),\(yString),\(zString)"
+        text = "\(formatter.string(from: NSDate() as Date)),A_v,\(acc_vertical)"
         readings.append(text)
     }
 

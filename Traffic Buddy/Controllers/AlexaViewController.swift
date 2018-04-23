@@ -165,6 +165,8 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
 
             do {
                 print(audioRecorder.url)
+//                s3Upload(url: audioRecorder.url)
+                // TODO: upload to S3 if recording report, otherwise send to AVS
                 
                 try avsClient.postRecording(audioData: Data(contentsOf: audioRecorder.url))
             } catch let ex {
@@ -198,7 +200,10 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     internal func s3Upload(url: URL) {
         let credentialsProvider = AWSStaticCredentialsProvider(accessKey: Settings.S3.S3_ACCESS_KEY, secretKey: Settings.S3.S3_SECRET_KEY)
         let configuration = AWSServiceConfiguration(region:.USEast1, credentialsProvider:credentialsProvider)
-
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd HHmmss.SSSS"
+        let dateString = formatter.string(from: NSDate() as Date)
+        
         AWSServiceManager.default().defaultServiceConfiguration = configuration
         let transferManager = AWSS3TransferManager.default()
 
@@ -206,7 +211,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         let uploadRequest = AWSS3TransferManagerUploadRequest()!
 
         uploadRequest.bucket = "cycle-buddy-reports"
-        uploadRequest.key = "test.wav"
+        uploadRequest.key = "\(dateString).wav"
         uploadRequest.body = uploadingFileURL
 
         transferManager.upload(uploadRequest).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
@@ -229,6 +234,38 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
             print("Upload complete for: \(String(describing: uploadRequest.key))")
             return nil
         })
+        
+        do {
+            let textUrl = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("location.txt")
+            try "location".write(to: textUrl!, atomically: true, encoding: String.Encoding.utf8)
+            
+            uploadRequest.bucket = "cycle-buddy-reports"
+            uploadRequest.key = "\(dateString).txt"
+            uploadRequest.body = textUrl!
+            
+            transferManager.upload(uploadRequest).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+                
+                if let error = task.error as NSError? {
+                    if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
+                        switch code {
+                        case .cancelled, .paused:
+                            break
+                        default:
+                            print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
+                        }
+                    } else {
+                        print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
+                    }
+                    return nil
+                }
+                
+                _ = task.result
+                print("Upload complete for: \(String(describing: uploadRequest.key))")
+                return nil
+            })
+        } catch let ex {
+            print("Error writing location information: \(ex.localizedDescription)")
+        }
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -267,6 +304,13 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         }
         // stop updating location until next locationTimer tick
         locationManager.stopUpdatingLocation()
+        
+        if MotionHelper.accidentDetected {
+            self.updateTextView(text: "sensor threshold reached (fake accident)")
+            MotionHelper.accidentDetected = false
+            
+            wakeAlexa()
+        }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -561,22 +605,26 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     }
     
     func triggerRelay(relayNumber: String) {
-        self.updateTextView(text: "triggering relay #\(relayNumber)")
-        
-        let task = electron!.callFunction("relay_on", withArguments: [relayNumber]) { (resultCode : NSNumber?, error : Error?) -> Void in
-            if (error == nil) {
-                self.readLoopState(silent: false)
-            }
-            else {
-                self.updateTextView(text: "error triggering relay")
-            }
+        if dist > 100 {
+            self.updateTextView(text: "can only manually trigger relay within 100 feet")
         }
-        let bytes : Int64 = task.countOfBytesExpectedToReceive
-        if bytes > 0 {
-            // ..do something with bytesToReceive
+        else {
+            self.updateTextView(text: "triggering relay #\(relayNumber)")
+            
+            let task = electron!.callFunction("relay_on", withArguments: [relayNumber]) { (resultCode : NSNumber?, error : Error?) -> Void in
+                if (error == nil) {
+                    self.readLoopState(silent: false)
+                }
+                else {
+                    self.updateTextView(text: "error triggering relay")
+                }
+            }
+            let bytes : Int64 = task.countOfBytesExpectedToReceive
+            if bytes > 0 {
+                // ..do something with bytesToReceive
+            }
         }
     }
-    
     
     func exportCsv() {
         let formatter = DateFormatter()

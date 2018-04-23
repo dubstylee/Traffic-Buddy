@@ -50,7 +50,6 @@
 		D30D4AA61FA6A812004EC057 /* UserLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserLocation.swift; sourceTree = "<group>"; };
 		D349B36E205DCD4F007442F6 /* wake.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = wake.wav; sourceTree = "<group>"; };
 		D34D670F1FD5161C003E1CEB /* Speedometer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Speedometer.swift; sourceTree = "<group>"; };
-		D35DD256208400E400868F8D /* finish.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = finish.wav; path = ../../Downloads/finish.wav; sourceTree = "<group>"; };
 		D35DD259208D635500868F8D /* finish.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = finish.wav; sourceTree = "<group>"; };
 		D361D0D31F81EB2E0060F25A /* Traffic Buddy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Traffic Buddy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D361D0D61F81EB2E0060F25A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -101,7 +100,6 @@
 		D361D0CA1F81EB2E0060F25A = {
 			isa = PBXGroup;
 			children = (
-				D35DD256208400E400868F8D /* finish.wav */,
 				D35DD259208D635500868F8D /* finish.wav */,
 				D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */,
 				D349B36E205DCD4F007442F6 /* wake.wav */,

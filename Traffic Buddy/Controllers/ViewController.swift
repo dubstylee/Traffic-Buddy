@@ -18,11 +18,9 @@ import UIKit
 //import HCKalmanFilter
 import LoginWithAmazon
 
-
 class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate, MFMailComposeViewControllerDelegate, AIAuthenticationDelegate {
     
-
-
+    var dist = 9999999.9 // default to far away from particle box
     var nearIntersection = false
     let locationManager = CLLocationManager()
     let distanceThreshold = 200.0 // 1320.0 == quarter mile
@@ -132,10 +130,16 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         self.updateTextView(text: "application loaded successfully")
     }
     
-    override var canBecomeFirstResponder: Bool {
-        get { return true }
-    }
-    
+//    override var canBecomeFirstResponder: Bool {
+//        get { return true }
+//    }
+//
+//    override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
+//        if motion == .motionShake {
+//            self.infoLabel.text = "shake gesture detected"
+//        }
+//    }
+
     @objc func updateAutoPollPause() {
         pause = false
     }
@@ -146,12 +150,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     
     @objc func updatePollServerButton() {
         pollServerButton.isEnabled = true
-    }
-
-    override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
-        if motion == .motionShake {
-            self.infoLabel.text = "shake gesture detected"
-        }
     }
     
     /**
@@ -248,30 +246,29 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         let myLocation: CLLocation = locations.first!
+        let locValue:CLLocationCoordinate2D = myLocation.coordinate
+        var latString = "0°"
+        var longString = "0°"
 
-                    let locValue:CLLocationCoordinate2D = myLocation.coordinate
-                    var latString = "0°"
-                    var longString = "0°"
+        if locValue.latitude > 0 {
+            // north of equator
+            latString = "\(locValue.latitude)° N"
+        }
+        else {
+            // south of equator
+            latString = "\(-locValue.latitude)° S"
+        }
+        
+        if locValue.longitude > 0 {
+            // east of prime meridian
+            longString = "\(locValue.longitude)° E"
+        }
+        else {
+            // west of prime meridian
+            longString = "\(-locValue.longitude)° W"
+        }
 
-                    if locValue.latitude > 0 {
-                        // north of equator
-                        latString = "\(locValue.latitude)° N"
-                    }
-                    else {
-                        // south of equator
-                        latString = "\(-locValue.latitude)° S"
-                    }
-                    
-                    if locValue.longitude > 0 {
-                        // east of prime meridian
-                        longString = "\(locValue.longitude)° E"
-                    }
-                    else {
-                        // west of prime meridian
-                        longString = "\(-locValue.longitude)° W"
-                    }
-
-                    locationLabel.text = "\(latString) \(longString)"
+        locationLabel.text = "\(latString) \(longString)"
 
         var instantSpeed = myLocation.speed
         instantSpeed = max(instantSpeed, 0.0)
@@ -287,6 +284,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
         // stop updating location until next locationTimer tick
         locationManager.stopUpdatingLocation()
+        
+        if MotionHelper.accidentDetected {
+            self.updateTextView(text: "sensor threshold reached (fake accident)")
+            MotionHelper.accidentDetected = false
+        }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -307,7 +309,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             
             let nearest = closestLocation(locations: coords, closestToLocation: locationManager.location!)
             if nearest != nil {
-                let dist = metersToFeet(from: nearest!.distance(from: locationManager.location!))
+                dist = metersToFeet(from: nearest!.distance(from: locationManager.location!))
                 
                 if dist < distanceThreshold && polling {
                     // auto-poll server within quarter mile
@@ -523,19 +525,24 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
     
     func triggerRelay(relayNumber: String) {
-        self.updateTextView(text: "triggering relay #\(relayNumber)")
-        
-        let task = electron!.callFunction("relay_on", withArguments: [relayNumber]) { (resultCode : NSNumber?, error : Error?) -> Void in
-            if (error == nil) {
-                self.readLoopState(silent: false)
-            }
-            else {
-                self.updateTextView(text: "error triggering relay")
-            }
+        if dist > 100 {
+            self.updateTextView(text: "can only manually trigger relay within 100 feet")
         }
-        let bytes : Int64 = task.countOfBytesExpectedToReceive
-        if bytes > 0 {
-            // ..do something with bytesToReceive
+        else {
+            self.updateTextView(text: "triggering relay #\(relayNumber)")
+            
+            let task = electron!.callFunction("relay_on", withArguments: [relayNumber]) { (resultCode : NSNumber?, error : Error?) -> Void in
+                if (error == nil) {
+                    self.readLoopState(silent: false)
+                }
+                else {
+                    self.updateTextView(text: "error triggering relay")
+                }
+            }
+            let bytes : Int64 = task.countOfBytesExpectedToReceive
+            if bytes > 0 {
+                // ..do something with bytesToReceive
+            }
         }
     }
     

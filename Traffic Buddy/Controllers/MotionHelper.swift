@@ -16,13 +16,15 @@ class MotionHelper {
     static var accelerometerReadings = [String]()
     static var gyroscopeReadings = [String]()
     static var motionReadings = [String]()
+    static var accidentDetected = false
+    
+    let THRESHOLD_TIMER = 1.0
+    let THRESHOLD_CHANGE = 3.0
     
     /**
      *  Configure the sensor data callback.
      */
     static func startMotionUpdates(motionManager: CMMotionManager) {
-        //var readings = readings
-        
         if motionManager.isDeviceMotionAvailable {
             // deviceMotion combines accelerometer and gyroscope data
             motionManager.deviceMotionUpdateInterval = kMotionUpdateInterval
@@ -99,6 +101,10 @@ class MotionHelper {
 //        text = "\(formatter.string(from: NSDate() as Date)),g,\(xString),\(yString),\(zString)"
         text = "\(formatter.string(from: NSDate() as Date)),A_v,\(acc_vertical)"
         readings.append(text)
+        
+        if acc_total > 5.0 {
+            accidentDetected = true
+        }
     }
 
     /**

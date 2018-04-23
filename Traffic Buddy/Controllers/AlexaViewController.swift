@@ -32,6 +32,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
     @IBOutlet weak var relayStateLabel: UITextView!
     
+    var dist = 9999999.9 // default to far away from particle box
     var electron : ParticleDevice?
     var pollServerTimer: Timer?
     var autoPollTimer: Timer?
@@ -298,7 +299,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
             
             let nearest = closestLocation(locations: coords, closestToLocation: locationManager.location!)
             if nearest != nil {
-                let dist = metersToFeet(from: nearest!.distance(from: locationManager.location!))
+                dist = metersToFeet(from: nearest!.distance(from: locationManager.location!))
                 
                 if dist < distanceThreshold && polling {
                     // auto-poll server within quarter mile

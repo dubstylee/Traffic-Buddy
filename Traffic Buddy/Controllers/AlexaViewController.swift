@@ -62,7 +62,6 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        (MPVolumeView().subviews.filter{NSStringFromClass($0.classForCoder) == "MPVolumeSlider"}.first as? UISlider)?.setValue(1, animated: false)
         
         self.relayStateView.layer.borderColor = UIColor.black.cgColor
         self.relayStateView.layer.borderWidth = 1.0
@@ -394,7 +393,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
             let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             let fileURL = directory.appendingPathComponent(Settings.Audio.TEMP_FILE_NAME)
             try audioRecorder = AVAudioRecorder(url: fileURL, settings: Settings.Audio.RECORDING_SETTING as [String : AnyObject])
-            try audioSession.setCategory(AVAudioSessionCategoryPlayAndRecord, with:[AVAudioSessionCategoryOptions.allowBluetooth, AVAudioSessionCategoryOptions.allowBluetoothA2DP])
+            try audioSession.setCategory(AVAudioSessionCategoryPlayAndRecord, with:[AVAudioSessionCategoryOptions.allowBluetooth, AVAudioSessionCategoryOptions.allowBluetoothA2DP, AVAudioSessionCategoryOptions.defaultToSpeaker])
         } catch let ex {
             print("Audio session has an error: \(ex.localizedDescription)")
         }
@@ -467,10 +466,11 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
                 do {
                     self.avsClient.sendEvent(namespace: "SpeechSynthesizer", name: "SpeechStarted", token: self.speakToken!)
                     
-                    try audioSession.setCategory(AVAudioSessionCategoryPlayAndRecord, with:[AVAudioSessionCategoryOptions.allowBluetooth, AVAudioSessionCategoryOptions.allowBluetoothA2DP])
+                    try audioSession.setCategory(AVAudioSessionCategoryPlayAndRecord, with:[AVAudioSessionCategoryOptions.allowBluetooth, AVAudioSessionCategoryOptions.allowBluetoothA2DP, AVAudioSessionCategoryOptions.defaultToSpeaker])
                     try self.audioPlayer = AVAudioPlayer(data: directive.data)
                     self.audioPlayer.delegate = self
                     self.audioPlayer.prepareToPlay()
+                    self.audioPlayer.volume = 1.0
                     self.audioPlayer.play()
                 } catch let ex {
                     print("Audio player has an error: \(ex.localizedDescription)")

@@ -532,7 +532,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     
     @IBAction func settingsButtonClick(_ sender: Any) {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        let controller = storyboard.instantiateViewController(withIdentifier: "SettingsViewController") as! SettingsViewController
+        let controller = storyboard.instantiateViewController(withIdentifier: "SettingsView") //as! SettingsViewController
         self.navigationController?.pushViewController(controller, animated: true)
     }
     

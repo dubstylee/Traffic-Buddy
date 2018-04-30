@@ -53,7 +53,7 @@ class RealmHelper {
     }
     
     // edit an existing object
-    func editObjects(obj: Object) {
+    func editObject(obj: Object) {
         try! self.database?.write ({
             self.database?.add(obj, update: true)
         })

@@ -19,7 +19,7 @@ import RealmSwift
 
 class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecorderDelegate, MFMailComposeViewControllerDelegate, MKMapViewDelegate, CLLocationManagerDelegate {
 
-    @IBOutlet weak var recordButton: UIButton!
+    @IBOutlet weak var recordReportButton: UIButton!
     @IBOutlet weak var recordSensorsButton: UIButton!
     @IBOutlet weak var infoLabel: UILabel!
     @IBOutlet weak var startButton: UIButton!
@@ -128,7 +128,7 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         }
     }
 
-    @IBAction func recordButtonPress(_ sender: Any) {
+    @IBAction func recordButtonDown(_ sender: Any) {
         prepareAudioSession()
         
         audioRecorder.prepareToRecord()
@@ -137,7 +137,14 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         self.isRecording = true
     }
     
-    @IBAction func recordButtonClick(_ sender: Any) {
+    @IBAction func recordButtonCancel(_ sender: Any) {
+        if (self.isRecording) {
+            audioRecorder.stop()
+            self.isRecording = false
+        }
+    }
+    
+    @IBAction func recordButtonUp(_ sender: Any) {
         if (self.isRecording) {
             audioRecorder.stop()
             
@@ -736,6 +743,17 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     @IBAction func triggerRelayButtonClick(_ sender: Any) {
         let number = "1"
         triggerRelay(relayNumber: number)
+    }
+    
+    @IBAction func recordReportClick(_ sender: Any) {
+        if recordReportButton.title(for: .normal) == "PRESS TO RECORD REPORT" {
+            recordReportButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
+            recordReportButton.setTitle("PRESS STOP TO FINISH", for: .normal)
+        }
+        else if recordReportButton.title(for: .normal) == "PRESS STOP TO FINISH" {
+            recordReportButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
+            recordReportButton.setTitle("PRESS TO RECORD REPORT", for: .normal)
+        }
     }
     
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {

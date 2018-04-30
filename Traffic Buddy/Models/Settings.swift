@@ -18,6 +18,11 @@ struct Settings {
         static let SCOPES = ["alexa:all"]
         static let SCOPE_DATA = "{\"alexa:all\":{\"productID\":\"\(APPLICATION_TYPE_ID)\"," +
         "\"productInstanceAttributes\":{\"deviceSerialNumber\":\"\(DSN)\"}}}"
+        
+        static let AUTH_URL = URL(string: "https://realm address")
+        static let REALM_URL = URL(string: "realms://realm address")
+        static let REALM_LOGIN = ""
+        static let REALM_KEY = ""
     }
     
     struct Audio {
@@ -27,7 +32,6 @@ struct Settings {
         static let RECORDING_SETTING =
             [AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
              AVEncoderBitRateKey: 16,
-             //AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
              AVNumberOfChannelsKey: 1,
              AVSampleRateKey: 16000.0] as [String : Any]
         static let SILENCE_THRESHOLD = -30.0 as Float
@@ -36,6 +40,7 @@ struct Settings {
     struct S3 {
         static let S3_ACCESS_KEY = "access key"
         static let S3_SECRET_KEY = "secret key"
+        static let LOCATION_FILE_NAME = "location.txt"
     }
     
     struct WakeWord {

@@ -31,13 +31,14 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
     @IBOutlet weak var relayStateLabel: UITextView!
-    
+    @IBOutlet weak var speedInstantLabel: UILabel!
+
+    let metersPerSecToMilesPerHour = 2.23694
     var dist = 9999999.9 // default to far away from particle box
     var electron : ParticleDevice?
     var pollServerTimer: Timer?
     var autoPollTimer: Timer?
     var locationTimer: Timer?
-    var intersections: Results<Intersection>!
     var polling = false
     var pause = false
     var nearIntersection = false
@@ -77,13 +78,11 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         avsClient.directiveHandler = self.directiveHandler
         avsClient.downchannelHandler = self.downchannelHandler
         
-        self.becomeFirstResponder()
-        
         if electron != nil {
             self.pollServerButton.isEnabled = true
             self.triggerRelayButton.isEnabled = true
         }
-        MapHelper.setupMapView(mapView: mapView, delegate: self, markers: Array(self.intersections))
+//        MapHelper.setupMapView(mapView: self.mapView, delegate: self, markers: Array(self.intersections))
         
         if CLLocationManager.locationServicesEnabled() {
             locationManager.activityType = CLActivityType.fitness
@@ -129,57 +128,30 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         }
     }
 
-//    override var canBecomeFirstResponder: Bool {
-//        get { return true }
-//    }
-//
-//    override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
-//        if motion == .motionShake {
-//            self.infoLabel.text = "shake gesture detected"
-//            avsClient.ping()
-//
-//            do {
-//                let url = Bundle.main.url(forResource: "wake", withExtension: "wav")
-//                let wake = try Data(contentsOf: url!)
-//
-//                avsClient.postRecording(audioData: wake)
-//
-//                // https://developer.amazon.com/docs/alexa-voice-service/recommended-media-support.html
-//                // mp3, aac, wav, etc.
-//                // try avsClient.postRecording(audioData: Data(contentsOf: fileURL))
-//            } catch let ex {
-//                print("AVS Client threw an error: \(ex.localizedDescription)")
-//                self.infoLabel.text = "wake word audio file not found"
-//            }
-//        }
-//    }
-
+    @IBAction func recordButtonPress(_ sender: Any) {
+        prepareAudioSession()
+        
+        audioRecorder.prepareToRecord()
+        audioRecorder.record()
+        
+        self.isRecording = true
+    }
+    
     @IBAction func recordButtonClick(_ sender: Any) {
         if (self.isRecording) {
             audioRecorder.stop()
             
             self.isRecording = false
-            recordButton.setTitle("mic", for: .normal)
-            recordButton.setImage(UIImage(named: "mic-30px.png"), for: .normal)
 
             do {
                 print(audioRecorder.url)
-//                s3Upload(url: audioRecorder.url)
+                //                s3Upload(url: audioRecorder.url)
                 // TODO: upload to S3 if recording report, otherwise send to AVS
                 
                 try avsClient.postRecording(audioData: Data(contentsOf: audioRecorder.url))
             } catch let ex {
                 print("AVS Client threw an error: \(ex.localizedDescription)")
             }
-        } else {
-            prepareAudioSession()
-            
-            audioRecorder.prepareToRecord()
-            audioRecorder.record()
-            
-            self.isRecording = true
-            recordButton.setTitle("stop", for: .normal)
-            recordButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
         }
     }
     
@@ -290,9 +262,13 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
             // west of prime meridian
             longString = "\(-locValue.longitude)° W"
         }
-        
+    
         locationLabel.text = "\(latString) \(longString)"
-
+        
+        var instantSpeed = myLocation.speed
+        instantSpeed = max(instantSpeed, 0.0)
+        speedInstantLabel.text = String(format: "Instant Speed: %.1f mph", (instantSpeed * metersPerSecToMilesPerHour))
+        
         //lastLocation = myLocation
         
         if polling {
@@ -334,10 +310,20 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
         if CLLocationManager.locationServicesEnabled() {
             locationManager.requestLocation()
             
+            // set up array of intersections
+            var intersections = [Intersection]()
+            if let inter = RealmHelper.sharedInstance.getObjects(type: Intersection.self) {
+                for i in inter {
+                    if let intersection = i as? Intersection {
+                        intersections.append(intersection)
+                    }
+                }
+            }
+            
             // make CLLocation array from intersections
             var coords = [CLLocation]()
-            for i in (0...intersections.count-1) {
-                coords.append(intersections[i].getLocation())
+            for i in intersections {
+                coords.append(i.getLocation())
             }
             
             let nearest = closestLocation(locations: coords, closestToLocation: locationManager.location!)
@@ -376,10 +362,10 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
                     // self.relayStateView.backgroundColor = UIColor.white
                 }
                 
-                for i in (0...intersections.count-1) {
-                    if intersections[i].latitude == nearest!.coordinate.latitude &&
-                        intersections[i].longitude == nearest!.coordinate.longitude {
-                        nearestIntersectionLabel.text = String(format: "%.0f feet from \(intersections[i].title)", dist)
+                for i in intersections {
+                    if i.latitude == nearest!.coordinate.latitude &&
+                        i.longitude == nearest!.coordinate.longitude {
+                        nearestIntersectionLabel.text = String(format: "%.0f feet from \(i.title)", dist)
                         break
                     }
                 }
@@ -440,12 +426,16 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     }
     
     func directiveHandler(directives: [DirectiveData]) {
+        // data being received from Alexa
         // Store the token for directive "Speak"
         for directive in directives {
+            //print(directive)
+
             if (directive.contentType == "application/json") {
                 do {
                     let jsonData = try JSONSerialization.jsonObject(with: directive.data) as! [String:Any]
                     let directiveJson = jsonData["directive"] as! [String:Any]
+                    //print(directiveJson)
                     let header = directiveJson["header"] as! [String:String]
                     if (header["name"] == "Speak") {
                         let payload = directiveJson["payload"] as! [String:String]
@@ -480,10 +470,11 @@ class AlexaViewController: UIViewController, AVAudioPlayerDelegate, AVAudioRecor
     }
     
     func downchannelHandler(directive: String) {
-        
+        // data being sent to Alexa
         do {
             let jsonData = try JSONSerialization.jsonObject(with: directive.data(using: String.Encoding.utf8)!) as! [String:Any]
             let directiveJson = jsonData["directive"] as! [String:Any]
+            //print(directiveJson)
             let header = directiveJson["header"] as! [String:String]
             if (header["name"] == "StopCapture") {
                 // Handle StopCapture

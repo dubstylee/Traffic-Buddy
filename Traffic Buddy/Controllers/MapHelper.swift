@@ -25,20 +25,22 @@ class MapHelper {
         return MKPolyline(coordinates: coords, count: coords.count)
     }
     
-    static func setupMapView(mapView: MKMapView, delegate: MKMapViewDelegate, markers: [Intersection]) {
+    static func setupMapView(mapView: MKMapView, delegate: MKMapViewDelegate, markers: [Intersection]?) {
         mapView.delegate = delegate
         mapView.layer.borderColor = UIColor.black.cgColor
         mapView.layer.borderWidth = 1.0
         
-        for i in markers {
-            // draw a circle to indicate intersection
-            let circle = MKCircle(center: i.getLocation().coordinate, radius: 10 as CLLocationDistance)
-            mapView.add(circle)
-            
-            for h in i.headings {
-                // draw arrows to indicate heading directions
-                let line = drawLine(start: i.getLocation(), direction: h, length: 250.0)
-                mapView.add(line)
+        if markers != nil {
+            for i in markers! {
+                // draw a circle to indicate intersection
+                let circle = MKCircle(center: i.getLocation().coordinate, radius: 10 as CLLocationDistance)
+                mapView.add(circle)
+                
+                for h in i.headings {
+                    // draw arrows to indicate heading directions
+                    let line = drawLine(start: i.getLocation(), direction: h, length: 250.0)
+                    mapView.add(line)
+                }
             }
         }
     }

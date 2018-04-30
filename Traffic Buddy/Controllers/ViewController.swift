@@ -25,10 +25,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     let locationManager = CLLocationManager()
     let distanceThreshold = 200.0 // 1320.0 == quarter mile
     let metersPerSecToMilesPerHour = 2.23694
-    //let realm = try! Realm()
-    var realm: Realm?
-    var intersections: Results<Intersection>!
-    //var locationRealm: Realm?
     var token: String?
     //var hcKalmanFilter: HCKalmanAlgorithm?
     //var resetKalmanFilter: Bool = false
@@ -58,24 +54,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     @IBOutlet weak var relayStateView: UIView!
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var relayStateLabel: UITextView!
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        var config = Realm.Configuration(readOnly: false, schemaVersion: 3,
-                                         migrationBlock: { migration, oldSchemaVersion in
-                                            if (oldSchemaVersion < 2) {
-                                                // Nothing to do!
-                                                // Realm will automatically detect new properties and removed properties
-                                                // And will update the schema on disk automatically
-                                            }
-        })
-        config.deleteRealmIfMigrationNeeded = true
-        
-        Realm.Configuration.defaultConfiguration = config
-        realm = try! Realm()
-        
-        self.becomeFirstResponder()
         self.formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
         self.locationManager.requestAlwaysAuthorization()
         self.locationManager.requestWhenInUseAuthorization()
@@ -83,7 +65,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         self.relayStateView.layer.borderWidth = 1.0
         self.textView.layoutManager.allowsNonContiguousLayout = false
         self.textView.text = ""
-
+        
         if let path = Bundle.main.path(forResource: "particle", ofType: "conf") {
             do {
                 token = try String(contentsOfFile: path, encoding: String.Encoding.utf8)
@@ -102,23 +84,17 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             locationManager.desiredAccuracy = kCLLocationAccuracyBest
             locationManager.distanceFilter = 0.5
             locationManager.pausesLocationUpdatesAutomatically = true
-            //locationManager.showsBackgroundLocationIndicator = true
-            //locationManager.startUpdatingLocation()
-
+            
             locationTimer = Timer.scheduledTimer(timeInterval: 2,
                                                  target: self,
                                                  selector: #selector(self.updateLocation),
                                                  userInfo: nil,
                                                  repeats: true)
         }
-
+        
         if locationManager.location != nil {
             MapHelper.centerMapOnLocation(mapView: self.mapView, location: locationManager.location!)
         }
-        initRealm()
-        //setupMapView()
-        MapHelper.setupMapView(mapView: mapView, delegate: self, markers: Array(self.intersections))
-        print(Realm.Configuration.defaultConfiguration.fileURL!)
         
         if ParticleCloud.sharedInstance().injectSessionAccessToken(token!) {
             infoLabel.text = "session active"
@@ -130,20 +106,20 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         self.updateTextView(text: "application loaded successfully")
     }
     
-//    override var canBecomeFirstResponder: Bool {
-//        get { return true }
-//    }
-//
-//    override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
-//        if motion == .motionShake {
-//            self.infoLabel.text = "shake gesture detected"
-//        }
-//    }
-
+    override func viewWillAppear(_ animated: Bool) {
+        self.navigationController?.setNavigationBarHidden(true, animated: animated)
+        super.viewWillAppear(animated)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        self.navigationController?.setNavigationBarHidden(false, animated: animated)
+        super.viewWillDisappear(animated)
+    }
+    
     @objc func updateAutoPollPause() {
         pause = false
     }
-
+    
     @objc func updateLocation() {
         locationManager.startUpdatingLocation()
     }
@@ -158,13 +134,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     internal func updateTextView(text: String) {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
-
+        
         textView.text = textView.text + "[\(formatter.string(from: NSDate() as Date))] \(text)\n"
         
         let bottom = NSMakeRange(textView.text.count - 1, 1)
         textView.scrollRangeToVisible(bottom)
     }
-
+    
     func getDevices() {
         ParticleCloud.sharedInstance().getDevices {
             (devices:[ParticleDevice]?, error:Error?) -> Void in
@@ -189,39 +165,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         return MapHelper.mapView(mapView: mapView, overlay: overlay)
     }
-
-    func initRealm() {
-        self.intersections = realm?.objects(Intersection.self)
-
-        if self.intersections.count == 0 {
-            try! realm?.write {
-                //realm?.add(Intersection(latitude: 44.040030, longitude: -123.080198, title: "18th & Alder"))
-                let intersection = Intersection(latitude: 44.040030, longitude: -123.080198, title: "18th & Alder")
-                intersection.headings.append(0.1783)   //   0° 10' 42"
-                intersection.headings.append(180.1783) // 180° 10' 42"
-                realm?.add(intersection)
-                #if DEBUG
-                realm?.add(Intersection(latitude: 44.084221, longitude: -123.061607, title: "Cambridge Oaks Dr"))
-                realm?.add(Intersection(latitude: 44.080277, longitude: -123.067722, title: "Coburg & Willakenzie"))
-                realm?.add(Intersection(latitude: 44.045489, longitude: -123.070931, title: "13th Ave Kiosk"))
-                realm?.add(Intersection(latitude: 44.045689, longitude: -123.066324, title: "13th & Franklin"))
-                realm?.add(Intersection(latitude: 44.056741, longitude: -123.024210, title: "Centennial & Pioneer Pkwy W"))
-                realm?.add(Intersection(latitude: 44.056656, longitude: -123.023835, title: "Centennial & Pioneer Pkwy E"))
-                #endif
-            }
-        }
-        
-        //infoLabel.text = "# intersections: \(intersections.count)"
-        /*let config = Realm.Configuration(
-            fileURL: Bundle.main.url(forResource: "locationhistory", withExtension: "realm"),
-            readOnly: false)
-        locationRealm = try! Realm(configuration: config)*/
-    }
     
     func metersToFeet(from: Double) -> Double {
         return from * 3.28084
     }
-
+    
     func closestLocation(locations: [CLLocation], closestToLocation location: CLLocation) -> CLLocation? {
         if let closestLocation = locations.min(by: { location.distance(from: $0) < location.distance(from: $1) }) {
             return closestLocation
@@ -230,7 +178,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             return nil
         }
     }
-
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -249,7 +197,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         let locValue:CLLocationCoordinate2D = myLocation.coordinate
         var latString = "0°"
         var longString = "0°"
-
+        
         if locValue.latitude > 0 {
             // north of equator
             latString = "\(locValue.latitude)° N"
@@ -267,13 +215,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             // west of prime meridian
             longString = "\(-locValue.longitude)° W"
         }
-
+        
         locationLabel.text = "\(latString) \(longString)"
-
+        
         var instantSpeed = myLocation.speed
         instantSpeed = max(instantSpeed, 0.0)
-        speedInstantLabel.text = String(format: "Instant Speed: %.2f mph", (instantSpeed * metersPerSecToMilesPerHour))
-
+        speedInstantLabel.text = String(format: "Instant Speed: %.1f mph", (instantSpeed * metersPerSecToMilesPerHour))
+        
         lastLocation = myLocation
         
         if polling {
@@ -297,15 +245,26 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     
     func displayClosestIntersection()
     {
-        if CLLocationManager.locationServicesEnabled() {
+        if CLLocationManager.locationServicesEnabled() /*&& self.intersections.count > 0*/ {
             locationManager.requestLocation()
             //let kalmanLocation = self.hcKalmanFilter?.processState(currentLocation: locationManager.location!)
             
+            // set up array of intersections
+            var intersections = [Intersection]()
+            if let inter = RealmHelper.sharedInstance.getObjects(type: Intersection.self) {
+                for i in inter {
+                    if let intersection = i as? Intersection {
+                        intersections.append(intersection)
+                    }
+                }
+            }
+
             // make CLLocation array from intersections
             var coords = [CLLocation]()
-            for i in (0...intersections.count-1) {
-                coords.append(intersections[i].getLocation())
+            for i in intersections {
+                coords.append(i.getLocation())
             }
+
             
             let nearest = closestLocation(locations: coords, closestToLocation: locationManager.location!)
             if nearest != nil {
@@ -342,11 +301,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                     // polling = false
                     // self.relayStateView.backgroundColor = UIColor.white
                 }
-
-                for i in (0...intersections.count-1) {
-                    if intersections[i].latitude == nearest!.coordinate.latitude &&
-                            intersections[i].longitude == nearest!.coordinate.longitude {
-                        nearestIntersectionLabel.text = String(format: "%.0f feet from \(intersections[i].title)", dist)
+                
+                for i in intersections {
+                    if i.latitude == nearest!.coordinate.latitude &&
+                        i.longitude == nearest!.coordinate.longitude {
+                        nearestIntersectionLabel.text = String(format: "%.0f feet from \(i.title)", dist)
                         break
                     }
                 }
@@ -414,7 +373,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             // ..do something with bytesToReceive
         }
     }
-
+    
     @IBAction func pollServerButtonClick(_ sender: Any) {
         //readLedState()
         updateTextView(text: "polling server")
@@ -482,21 +441,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 //showErrorAlert("Error", msg: "There is no data to export")
             }
         }
-
+        
         do {
             try csvText.write(to: path!, atomically: true, encoding: String.Encoding.utf8)
-            
-            /*let vc = UIActivityViewController(activityItems: [path!], applicationActivities: [])
-             vc.excludedActivityTypes = [
-             UIActivityType.assignToContact,
-             UIActivityType.saveToCameraRoll,
-             UIActivityType.postToFlickr,
-             UIActivityType.postToVimeo,
-             UIActivityType.postToTencentWeibo,
-             UIActivityType.postToTwitter,
-             UIActivityType.postToFacebook,
-             UIActivityType.openInIBooks
-             ]*/
             
             if MFMailComposeViewController.canSendMail() {
                 let emailController = MFMailComposeViewController()
@@ -507,13 +454,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 
                 if let data = NSData(contentsOfFile: "\(NSTemporaryDirectory())\(fileName)") {
                     emailController.addAttachmentData(data as Data, mimeType: "text/csv", fileName: fileName)
-                    
                 }
                 
                 present(emailController, animated: true, completion: nil)
             }
-            
-            //present(vc, animated: true, completion: nil)
         } catch {
             print("Failed to create file")
             print("\(error)")
@@ -557,8 +501,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             let storyboard = UIStoryboard(name: "Main", bundle: nil)
             let controller = storyboard.instantiateViewController(withIdentifier: "AlexaViewController") as! AlexaViewController
             controller.electron = self.electron
-            controller.intersections = self.intersections
-            self.present(controller, animated: true, completion: nil)
+            self.navigationController?.pushViewController(controller, animated: true)
         case API.clearAuthorizationState:
             print("Logout successfully!")
         default:
@@ -585,6 +528,12 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             recordSensors.setImage(UIImage(named: "record-30px.png"), for: .normal)
             recordSensors.setTitle("record", for: .normal)
         }
+    }
+    
+    @IBAction func settingsButtonClick(_ sender: Any) {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let controller = storyboard.instantiateViewController(withIdentifier: "SettingsViewController") as! SettingsViewController
+        self.navigationController?.pushViewController(controller, animated: true)
     }
     
     @IBAction func triggerRelayButtonClick(_ sender: Any) {

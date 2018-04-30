@@ -18,9 +18,6 @@ class MotionHelper {
     static var motionReadings = [String]()
     static var accidentDetected = false
     
-    let THRESHOLD_TIMER = 1.0
-    let THRESHOLD_CHANGE = 3.0
-    
     /**
      *  Configure the sensor data callback.
      */
@@ -80,30 +77,25 @@ class MotionHelper {
         let yaw = (motion?.attitude.yaw)!
         let pitch = (motion?.attitude.pitch)!
         let roll = (motion?.attitude.roll)!
-//        let yaw = (motion?.rotationRate.x)!
-//        let pitch = (motion?.rotationRate.y)!
-//        let roll = (motion?.rotationRate.z)!
-
+        
         let acc = pow(acc_x, 2.0) + pow(acc_y, 2.0) + pow(acc_z, 2.0)
         let acc_total = pow(acc, 0.5)
         let acc_vertical = abs(acc_x * sin(roll) + acc_y * sin(pitch) - acc_z * cos(pitch) * cos(roll))
         
-//        xString = motion?.userAcceleration.x != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.x)!]): "?"
-//        yString = motion?.userAcceleration.y != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.y)!]): "?"
-//        zString = motion?.userAcceleration.z != nil ? String(format: "%.2f", arguments: [(motion?.userAcceleration.z)!]): "?"
-//        text = "\(formatter.string(from: NSDate() as Date)),a,\(xString),\(yString),\(zString)"
         var text = "\(formatter.string(from: NSDate() as Date)),A_t,\(acc_total)"
         readings.append(text)
         
-//        xString = motion?.rotationRate.x != nil ? String(format: "%.2f", arguments: [(motion?.rotationRate.x)!]): "?"
-//        yString = motion?.rotationRate.y != nil ? String(format: "%.2f", arguments: [(motion?.rotationRate.y)!]): "?"
-//        zString = motion?.rotationRate.z != nil ? String(format: "%.2f", arguments: [(motion?.rotationRate.z)!]): "?"
-//        text = "\(formatter.string(from: NSDate() as Date)),g,\(xString),\(yString),\(zString)"
         text = "\(formatter.string(from: NSDate() as Date)),A_v,\(acc_vertical)"
         readings.append(text)
         
-        if acc_total > 5.0 {
-            accidentDetected = true
+        if !accidentDetected {
+            if let thresh = RealmHelper.sharedInstance.getObjects(type: ConfigItem.self)?.filter("key == 'SensorChangeThreshold'") {
+                let threshValue = Double((thresh[0] as! ConfigItem).value)!
+                if acc_total > threshValue {
+                    print("threshold value \(threshValue)")
+                    accidentDetected = true
+                }
+            }
         }
     }
 

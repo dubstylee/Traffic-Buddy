@@ -139,7 +139,7 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
         bodyData.append(getBoundaryTermBegin())
         bodyData.append(addAudioData(audioData: audioData))
         bodyData.append(getBoundaryTermEnd())
-        print("JSON request: \(jsonData)")
+        //print("JSON request: \(jsonData)")
         
         session.uploadTask(with: request, from: bodyData, completionHandler: { (data:Data?, response:URLResponse?, error:Error?) -> Void in
             if (error != nil) {
@@ -149,7 +149,7 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
                 print("Send audio status code: \(res.statusCode)")
                 
                 if (res.statusCode >= 200 && res.statusCode <= 299) {
-                    
+                    print(res)
                     if let contentTypeHeader = res.allHeaderFields["Content-Type"] {
                         let boundary = self.extractBoundary(contentTypeHeader: contentTypeHeader as! String)
                         let directives = self.extractDirectives(data: data!, boundary: boundary)
@@ -266,14 +266,14 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
                 var directiveData = String(data: subdata.subdata(in: (headerRange?.upperBound)!..<subdata.count), encoding: String.Encoding.utf8) ?? "Directive data is not String"
                 directiveData = directiveData.replacingOccurrences(of: "\r\n", with: "")
                 directives.append(DirectiveData(contentType: "application/json", data: directiveData.data(using: String.Encoding.utf8)!))
-                print("Directive: \(directiveData)")
+                //print("Directive: \(directiveData)")
             }
             contentType = subdata.range(of: contentTypeAudio)
             if (contentType != nil) {
                 let headerRange = subdata.range(of: headerEnd)
                 let audioData = subdata.subdata(in: (headerRange?.upperBound)!..<subdata.count)
                 directives.append(DirectiveData(contentType: "application/octet-stream", data: audioData))
-                print("Audio data")
+                //print("Audio data")
             }
         }
         

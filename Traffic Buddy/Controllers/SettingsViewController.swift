@@ -24,24 +24,24 @@ class SettingsViewController: UITableViewController {
                 if let config = item as? ConfigItem {
                     if config.key == "SensorChangeThreshold" {
                         if let val = Double(config.value) {
-                            print("sensor change threshold \(val)")
                             sensorChangeStepper.value = val
                         }
                         sensorChangeLabel.text = "\(sensorChangeStepper.value)"
                     }
                     else if config.key == "DistanceThresholdFeet" {
                         if let val = Float(config.value) {
-                            print("threshold distance \(val)")
                             distanceFeetSlider.value = val
                         }
                         distanceFeetLabel.text = "\(distanceFeetSlider.value) feet"
                     }
                     else if config.key == "DistanceThresholdSeconds" {
                         if let val = Float(config.value) {
-                            print("threshold seconds \(val)")
                             distanceSecondsSlider.value = val
                         }
-                        distanceSecondsLabel.text = "\(distanceSecondsSlider.value) feet"
+                        distanceSecondsLabel.text = "\(distanceSecondsSlider.value) seconds"
+                    }
+                    else if config.key == "HeadingThreshold" {
+                        // not configurable from within the app
                     }
                     else {
                         print("unknown key: '\(config.key)'")

@@ -13,25 +13,24 @@ struct DirectiveData {
     var data: Data
 }
 
-class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDelegate {
-    
-    let PING_ENDPOINT: String = "https://avs-alexa-na.amazon.com/ping"
+class AlexaVoiceServiceClient: NSObject, URLSessionDelegate, URLSessionDataDelegate {
     let DIRECTIVES_ENDPOINT = "https://avs-alexa-na.amazon.com/v20160207/directives"
     let EVENTS_ENDPOINT: String = "https://avs-alexa-na.amazon.com/v20160207/events"
-    
-    let TIMEOUT = 3600 // 60 minutes per AVS recommendation
-    let BOUNDARY_TERM = "CUSTOM_BOUNDARY_TERM"
-    let SYNC_EVENT_DATA = "{ \"event\" : { \"header\" : { \"namespace\" : \"System\", \"name\" : \"SynchronizeState\", \"messageId\" : \"1\" }, \"payload\" : { } }, \"context\" : [ { \"header\" : { \"namespace\" : \"AudioPlayer\", \"name\" : \"PlaybackState\" }, \"payload\" : { \"token\" : \"\", \"offsetInMilliseconds\" : 0, \"playerActivity\" : \"IDLE\" } }, { \"header\" : { \"namespace\" : \"SpeechSynthesizer\", \"name\" : \"SpeechState\" }, \"payload\" : { \"token\" : \"\", \"offsetInMilliseconds\" : 0, \"playerActivity\" : \"FINISHED\" } }, { \"header\" : { \"namespace\" : \"Alerts\", \"name\" : \"AlertsState\" }, \"payload\" : { \"allAlerts\" : [ ], \"activeAlerts\" : [ ] } }, { \"header\" : { \"namespace\" : \"Speaker\", \"name\" : \"SetVolume\" }, \"payload\" : { \"volume\" : 100, \"muted\" : false } } ] }"
+    let PING_ENDPOINT: String = "https://avs-alexa-na.amazon.com/ping"
+
     let AUDIO_EVENT_DATA = "{\"event\": {\"header\": {\"namespace\": \"SpeechRecognizer\",\"name\": \"Recognize\",\"messageId\": \"$messageId\",\"dialogRequestId\": \"$dialogRequestId\"},\"payload\": {\"profile\": \"NEAR_FIELD\", \"format\": \"AUDIO_L16_RATE_16000_CHANNELS_1\"}}, \"directive\": {\"header\": {\"namespace\": \"Speaker\", \"name\": \"SetVolume\",   \"messageId\": \"$messageId\", \"dialogRequestId\": \"$dialogRequestId\"},\"payload\": {\"volume\": 100}}, \"context\": [{\"header\": {\"namespace\": \"AudioPlayer\",\"name\": \"PlaybackState\"},\"payload\": {\"token\": \"\",\"offsetInMilliseconds\": 0,\"playerActivity\": \"FINISHED\"}}, {\"header\": {\"namespace\": \"SpeechSynthesizer\",\"name\": \"SpeechState\"},\"payload\": {\"token\": \"\",\"offsetInMilliseconds\": 0,\"playerActivity\": \"FINISHED\"}}, { \"header\" : { \"namespace\" : \"Alerts\", \"name\" : \"AlertsState\" }, \"payload\" : { \"allAlerts\" : [ ], \"activeAlerts\" : [ ] } }, {\"header\": {\"namespace\": \"Speaker\",\"name\": \"SetVolume\"},\"payload\": {\"volume\": 100,\"muted\": false}}]}"
     let EVENT_DATA_TEMPLATE = "{\"event\": {\"header\": {\"namespace\": \"$namespace\",\"name\": \"$name\",\"messageId\": \"$messageId\"},\"payload\": {\"token\": \"$token\"}}}"
-    
+    let SYNC_EVENT_DATA = "{ \"event\" : { \"header\" : { \"namespace\" : \"System\", \"name\" : \"SynchronizeState\", \"messageId\" : \"1\" }, \"payload\" : { } }, \"context\" : [ { \"header\" : { \"namespace\" : \"AudioPlayer\", \"name\" : \"PlaybackState\" }, \"payload\" : { \"token\" : \"\", \"offsetInMilliseconds\" : 0, \"playerActivity\" : \"IDLE\" } }, { \"header\" : { \"namespace\" : \"SpeechSynthesizer\", \"name\" : \"SpeechState\" }, \"payload\" : { \"token\" : \"\", \"offsetInMilliseconds\" : 0, \"playerActivity\" : \"FINISHED\" } }, { \"header\" : { \"namespace\" : \"Alerts\", \"name\" : \"AlertsState\" }, \"payload\" : { \"allAlerts\" : [ ], \"activeAlerts\" : [ ] } }, { \"header\" : { \"namespace\" : \"Speaker\", \"name\" : \"SetVolume\" }, \"payload\" : { \"volume\" : 100, \"muted\" : false } } ] }"
+
+    let BOUNDARY_TERM = "CUSTOM_BOUNDARY_TERM"
+    let TIMEOUT = 3600 // 60 minutes per AVS recommendation
+
     var session: URLSession!
-    
-    var pingHandler: ((_ isSuccess:Bool) -> Void)?
-    var syncHandler: ((_ isSuccess:Bool) -> Void)?
     var directiveHandler: ((_ directives:[DirectiveData]) -> Void)?
     var downchannelHandler: ((_ directive:String) -> Void)?
-    
+    var pingHandler: ((_ success:Bool) -> Void)?
+    var syncHandler: ((_ success:Bool) -> Void)?
+
     override init() {
         super.init()
         
@@ -43,7 +42,6 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
     }
     
     @objc func ping() {
-        
         var request = URLRequest(url: URL(string: PING_ENDPOINT)!)
         request.httpMethod = "GET"
         addAuthHeader(request: &request)
@@ -65,7 +63,6 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
     }
     
     func startDownchannel() {
-        
         // 1. Establish a downchannel stream
         var request = URLRequest(url: URL(string: DIRECTIVES_ENDPOINT)!)
         request.httpMethod = "GET"
@@ -85,7 +82,6 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
     }
     
     func postRecording(audioData: Data) {
-        
         var eventData = AUDIO_EVENT_DATA
         // Create unique message id and dialog id
         eventData = eventData.replacingOccurrences(of: "$messageId", with: UUID().uuidString)
@@ -95,7 +91,6 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
     }
     
     func sync(jsonData: String) {
-        
         var request = URLRequest(url: URL(string: EVENTS_ENDPOINT)!)
         request.httpMethod = "POST"
         request.timeoutInterval = TimeInterval(TIMEOUT)
@@ -126,7 +121,6 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
     }
     
     func sendAudio(jsonData: String, audioData: Data) {
-        
         var request = URLRequest(url: URL(string: EVENTS_ENDPOINT)!)
         request.httpMethod = "POST"
         request.timeoutInterval = TimeInterval(TIMEOUT)
@@ -139,7 +133,6 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
         bodyData.append(getBoundaryTermBegin())
         bodyData.append(addAudioData(audioData: audioData))
         bodyData.append(getBoundaryTermEnd())
-        //print("JSON request: \(jsonData)")
         
         session.uploadTask(with: request, from: bodyData, completionHandler: { (data:Data?, response:URLResponse?, error:Error?) -> Void in
             if (error != nil) {
@@ -149,7 +142,6 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
                 print("Send audio status code: \(res.statusCode)")
                 
                 if (res.statusCode >= 200 && res.statusCode <= 299) {
-                    print(res)
                     if let contentTypeHeader = res.allHeaderFields["Content-Type"] {
                         let boundary = self.extractBoundary(contentTypeHeader: contentTypeHeader as! String)
                         let directives = self.extractDirectives(data: data!, boundary: boundary)
@@ -163,7 +155,6 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
     }
     
     func sendEvent(namespace: String, name: String, token: String) {
-        
         var request = URLRequest(url: URL(string: EVENTS_ENDPOINT)!)
         request.httpMethod = "POST"
         addAuthHeader(request: &request)
@@ -235,7 +226,6 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
     }
     
     fileprivate func extractDirectives(data: Data, boundary: String) -> [DirectiveData] {
-        
         var directives = [DirectiveData]()
         
         let innerBoundry = "--\(boundary)".data(using: String.Encoding.utf8)!
@@ -266,14 +256,12 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
                 var directiveData = String(data: subdata.subdata(in: (headerRange?.upperBound)!..<subdata.count), encoding: String.Encoding.utf8) ?? "Directive data is not String"
                 directiveData = directiveData.replacingOccurrences(of: "\r\n", with: "")
                 directives.append(DirectiveData(contentType: "application/json", data: directiveData.data(using: String.Encoding.utf8)!))
-                //print("Directive: \(directiveData)")
             }
             contentType = subdata.range(of: contentTypeAudio)
             if (contentType != nil) {
                 let headerRange = subdata.range(of: headerEnd)
                 let audioData = subdata.subdata(in: (headerRange?.upperBound)!..<subdata.count)
                 directives.append(DirectiveData(contentType: "application/octet-stream", data: audioData))
-                //print("Audio data")
             }
         }
         
@@ -286,6 +274,6 @@ class AlexaVoiceServiceClient : NSObject, URLSessionDelegate, URLSessionDataDele
         let firstBracket = dataString.range(of: "{")!
         let lastBracket = dataString.range(of: "}", options: .backwards)!
         let jsonString = dataString[firstBracket.lowerBound...lastBracket.upperBound]
-        self.downchannelHandler?(String(jsonString))
+        downchannelHandler?(String(jsonString))
     }
 }

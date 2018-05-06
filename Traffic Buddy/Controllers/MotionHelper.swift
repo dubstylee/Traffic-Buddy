@@ -90,10 +90,11 @@ class MotionHelper {
         
         if !accidentDetected {
             if let thresh = RealmHelper.sharedInstance.getObjects(type: ConfigItem.self)?.filter("key == 'SensorChangeThreshold'") {
-                let threshValue = Double((thresh[0] as! ConfigItem).value)!
-                if acc_total > threshValue {
-                    print("threshold value \(threshValue)")
-                    accidentDetected = true
+                if let threshValue = Double((thresh[0] as! ConfigItem).value) {
+                    if acc_total > threshValue && acc_vertical > threshValue {
+                        print("threshold value \(threshValue)")
+                        accidentDetected = true
+                    }
                 }
             }
         }

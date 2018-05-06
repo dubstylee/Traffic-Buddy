@@ -3,73 +3,103 @@
 //  Traffic Buddy
 //
 //  Created by Brian Williams on 10/1/17.
-//  Copyright © 2017 Brian Williams. All rights reserved.
+//  Copyright © 2017-18 Brian Williams. All rights reserved.
 //
 
-import AudioToolbox
+import AVFoundation
+import AWSS3
 import CoreLocation
 import CoreMotion
-import MapKit
+import LoginWithAmazon
 import MessageUI
 import Particle_SDK
 import Realm
 import RealmSwift
 import UIKit
-//import HCKalmanFilter
-import LoginWithAmazon
 
-class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate, MFMailComposeViewControllerDelegate, AIAuthenticationDelegate {
+class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayerDelegate, AVAudioRecorderDelegate, MFMailComposeViewControllerDelegate, AIAuthenticationDelegate {
     
-    var dist = 9999999.9 // default to far away from particle box
-    var nearIntersection = false
-    let locationManager = CLLocationManager()
     let distanceThreshold = 200.0 // 1320.0 == quarter mile
-    let metersPerSecToMilesPerHour = 2.23694
-    var token: String?
-    //var hcKalmanFilter: HCKalmanAlgorithm?
-    //var resetKalmanFilter: Bool = false
-    var polling: Bool = false
-    var nearestIntersection: CLLocation?
-    var lastLocation: CLLocation?
-    fileprivate let motionManager = CMMotionManager()
     let formatter = DateFormatter()
-    var pause: Bool = false
+    let locationManager = CLLocationManager()
+    let lwa = LoginWithAmazonProxy.sharedInstance
+    let metersPerSecToMilesPerHour = 2.23694
+    let motionManager = CMMotionManager()
+    let realm = RealmHelper.sharedInstance
+
+    /* appState
+     * 1: trip off
+     * 2: trip on, but outside of 200 ft threshold
+     * 3: trip on, within 200 ft threshold
+     * 4: trip on, within 50 ft, triggering relay
+     */
+    var appState = 1
+    var dist = 9999999.9 // default to far away from particle box
+    var electron : ParticleDevice?
+    var heading: CLHeading?
+    var isLoggedIn = false
+    var isNearIntersection = false
+    var isOnTrip = false
+    var isPaused = false
+    var lastLocation: CLLocation?
+    var nearestIntersection: CLLocation?
+    var particleToken: String?
+
     var autoPollTimer: Timer?
     var locationTimer: Timer?
     var pollServerTimer: Timer?
-    var initialAttitude: CMAttitude?
-    let lwa = LoginWithAmazonProxy.sharedInstance
-    var electron : ParticleDevice?
+
+    // Alexa-related variables
+    private let audioSession = AVAudioSession.sharedInstance()
+    private var audioRecorder: AVAudioRecorder!
+    private var audioPlayer: AVAudioPlayer!
+    private var avsClient = AlexaVoiceServiceClient()
+    private var avsToken: String?
+    private var isRecording = false
     
-    @IBOutlet weak var triggerRelayButton: UIButton!
-    @IBOutlet weak var pollServerButton: UIButton!
-    @IBOutlet var mainBackground: UIView!
+    @IBOutlet weak var alexaButton: UIButton!
     @IBOutlet weak var infoLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
+    @IBOutlet weak var lwaButton: UIButton!
+    @IBOutlet weak var mainBackground: UIView!
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
-    @IBOutlet weak var speedInstantLabel: UILabel!
-    @IBOutlet weak var mapView: MKMapView!
+    @IBOutlet weak var pollServerButton: UIButton!
+    @IBOutlet weak var recordReportButton: UIButton!
     @IBOutlet weak var recordSensors: UIButton!
-    @IBOutlet weak var startButton: UIButton!
-    @IBOutlet weak var relayStateView: UIView!
-    @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var relayStateLabel: UITextView!
+    @IBOutlet weak var relayStateView: UIView!
+    @IBOutlet weak var speedLabel: UILabel!
+    @IBOutlet weak var startButton: UIButton!
+    @IBOutlet weak var textView: UITextView!
+    @IBOutlet weak var triggerRelayButton: UIButton!
 
+    // MARK: UIViewController functions
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        // Dispose of any resources that can be recreated.
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
-        self.locationManager.requestAlwaysAuthorization()
-        self.locationManager.requestWhenInUseAuthorization()
-        self.relayStateView.layer.borderColor = UIColor.black.cgColor
-        self.relayStateView.layer.borderWidth = 1.0
-        self.textView.layoutManager.allowsNonContiguousLayout = false
-        self.textView.text = ""
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
+        locationManager.requestAlwaysAuthorization()
+        locationManager.requestWhenInUseAuthorization()
+        relayStateView.layer.borderColor = UIColor.black.cgColor
+        relayStateView.layer.borderWidth = 1.0
+        textView.layoutManager.allowsNonContiguousLayout = false
+        textView.text = ""
+        
+        // setup Alexa Voice Services client
+        avsClient.pingHandler = self.pingHandler
+        avsClient.syncHandler = self.syncHandler
+        avsClient.directiveHandler = self.directiveHandler
+        avsClient.downchannelHandler = self.downchannelHandler
         
         if let path = Bundle.main.path(forResource: "particle", ofType: "conf") {
             do {
-                token = try String(contentsOfFile: path, encoding: String.Encoding.utf8)
-                token = token!.trimmingCharacters(in: NSCharacterSet.newlines)
+                particleToken = try String(contentsOfFile: path, encoding: String.Encoding.utf8)
+                particleToken = particleToken!.trimmingCharacters(in: NSCharacterSet.newlines)
             } catch {
                 print("Failed to read text from particle.conf")
             }
@@ -84,40 +114,39 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             locationManager.desiredAccuracy = kCLLocationAccuracyBest
             locationManager.distanceFilter = 0.5
             locationManager.pausesLocationUpdatesAutomatically = true
+            locationManager.headingFilter = 5.0
+            locationManager.startUpdatingHeading()
             
-            locationTimer = Timer.scheduledTimer(timeInterval: 2,
+            locationTimer = Timer.scheduledTimer(timeInterval: 1,
                                                  target: self,
                                                  selector: #selector(self.updateLocation),
                                                  userInfo: nil,
                                                  repeats: true)
         }
         
-        if locationManager.location != nil {
-            MapHelper.centerMapOnLocation(mapView: self.mapView, location: locationManager.location!)
-        }
-        
-        if ParticleCloud.sharedInstance().injectSessionAccessToken(token!) {
+        if ParticleCloud.sharedInstance().injectSessionAccessToken(particleToken!) {
             infoLabel.text = "session active"
-            getDevices()
+            getParticleDevices()
         } else {
             infoLabel.text = "bad token"
         }
         
-        self.updateTextView(text: "application loaded successfully")
+        updateTextView(text: "application loaded successfully")
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        self.navigationController?.setNavigationBarHidden(true, animated: animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
         super.viewWillAppear(animated)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
-        self.navigationController?.setNavigationBarHidden(false, animated: animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
         super.viewWillDisappear(animated)
     }
     
+    // MARK: Objective-C delegate functions
     @objc func updateAutoPollPause() {
-        pause = false
+        isPaused = false
     }
     
     @objc func updateLocation() {
@@ -128,290 +157,374 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         pollServerButton.isEnabled = true
     }
     
+    // MARK: AIAuthenticationDelegate functions
     /**
-     Append the text to the textView, with the current date/time.
+     The API request to LoginWithAmazon failed.
+     
+     - parameter errorResponse: An `APIError` describing the response of the request.
      */
-    internal func updateTextView(text: String) {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
-        
-        textView.text = textView.text + "[\(formatter.string(from: NSDate() as Date))] \(text)\n"
-        
-        let bottom = NSMakeRange(textView.text.count - 1, 1)
-        textView.scrollRangeToVisible(bottom)
+    func requestDidFail(_ errorResponse: APIError) {
+        print("Error: \(errorResponse.error.message)")
     }
     
-    func getDevices() {
-        ParticleCloud.sharedInstance().getDevices {
-            (devices:[ParticleDevice]?, error:Error?) -> Void in
-            if let _ = error {
-                self.infoLabel.text = "check your internet connectivity"
-            }
-            else {
-                if let d = devices {
-                    for device in d {
-                        if device.name == "beacon_2" {
-                            self.electron = device
-                            self.updateTextView(text: "found \(device.name!)")
-                            self.pollServerButton.isEnabled = true
-                            self.triggerRelayButton.isEnabled = true
-                        }
-                    }
-                }
-            }
+    /**
+     The API request to LoginWithAmazon was successful.
+     
+     - parameter apiResult: The `APIResult` of the request.
+     */
+    func requestDidSucceed(_ apiResult: APIResult) {
+        switch(apiResult.api) {
+        case API.authorizeUser:
+            print("Authorized")
+            lwa.getAccessToken(delegate: self)
+        case API.getAccessToken:
+            print("Login successfully!")
+            LoginWithAmazonToken.sharedInstance.loginWithAmazonToken = apiResult.result as! String?
+            lwaButton.setImage(UIImage(named: "logout-30px.png"), for: .normal)
+            isLoggedIn = true
+            alexaButton.isHidden = false
+            recordReportButton.isHidden = false
+        case API.clearAuthorizationState:
+            print("Logout successfully!")
+            lwaButton.setImage(UIImage(named: "amazon-30px.png"), for: .normal)
+            isLoggedIn = false
+            alexaButton.isHidden = true
+            recordReportButton.isHidden = true
+        default:
+            return
         }
     }
-    
-    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-        return MapHelper.mapView(mapView: mapView, overlay: overlay)
+
+    // MARK: AVAudioPlayerDelegate functions
+    /**
+     An error occurred during audio decoding.
+     
+     - parameter player: The `AVAudioPlayer` instance.
+     - parameter error: The `Error` that occurred.
+     */
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        print("Audio player has an error: \(String(describing: error?.localizedDescription))")
     }
     
-    func metersToFeet(from: Double) -> Double {
-        return from * 3.28084
+    /**
+     The audio player finished playing.
+     
+     - parameter player: The `AVAudioPlayer` instance.
+     - parameter flag: Whether or not the audio player finished successfully.
+     */
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        print("Audio player is finished playing")
+        infoLabel.text = "Cycle Buddy"
+        
+        avsClient.sendEvent(namespace: "SpeechSynthesizer", name: "SpeechFinished", token: avsToken!)
     }
     
-    func closestLocation(locations: [CLLocation], closestToLocation location: CLLocation) -> CLLocation? {
-        if let closestLocation = locations.min(by: { location.distance(from: $0) < location.distance(from: $1) }) {
-            return closestLocation
-        } else {
-            nearestIntersectionLabel.text = "locations is empty"
-            return nil
-        }
+    // MARK: AVAudioRecorderDelegate functions
+    /**
+     The audio recorder finished recording.
+     
+     - parameter recorder: The `AVAudioRecorder` instance.
+     - parameter flag: Whether or not the audio recorder finished successfully.
+     */
+    func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+        print("Audio recorder is finished recording")
     }
     
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    /**
+     An error occurred during audio encoding.
+     
+     - parameter recorder: The `AVAudioRecorder` instance.
+     - parameter error: The `Error` that occurred.
+     */
+    func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
+        print("Audio recorder has an error: \(String(describing: error?.localizedDescription))")
     }
     
-    //this method will be called each time when a user change his location access preference.
+    // MARK: CLLocationManagerDelegate functions
+    /**
+     Called each time a user changes location access preference.
+     
+     - parameter manager: The `CLLocationManager` instance.
+     - parameter status: The new `CLAuthorizationStatus` after the change.
+     */
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
         if status == .authorizedWhenInUse {
             print("User allowed us to access location")
-            //do whatever init activities here.
         }
     }
     
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        let myLocation: CLLocation = locations.first!
-        let locValue:CLLocationCoordinate2D = myLocation.coordinate
-        var latString = "0°"
-        var longString = "0°"
-        
-        if locValue.latitude > 0 {
-            // north of equator
-            latString = "\(locValue.latitude)° N"
-        }
-        else {
-            // south of equator
-            latString = "\(-locValue.latitude)° S"
-        }
-        
-        if locValue.longitude > 0 {
-            // east of prime meridian
-            longString = "\(locValue.longitude)° E"
-        }
-        else {
-            // west of prime meridian
-            longString = "\(-locValue.longitude)° W"
-        }
-        
-        locationLabel.text = "\(latString) \(longString)"
-        
-        var instantSpeed = myLocation.speed
-        instantSpeed = max(instantSpeed, 0.0)
-        speedInstantLabel.text = String(format: "Instant Speed: %.1f mph", (instantSpeed * metersPerSecToMilesPerHour))
-        
-        lastLocation = myLocation
-        
-        if polling {
-            MapHelper.centerMapOnLocation(mapView: self.mapView, location: myLocation)
-        }
-        if !pause {
-            displayClosestIntersection()
-        }
-        // stop updating location until next locationTimer tick
-        locationManager.stopUpdatingLocation()
-        
-        if MotionHelper.accidentDetected {
-            self.updateTextView(text: "sensor threshold reached (fake accident)")
-            MotionHelper.accidentDetected = false
-        }
-    }
-    
+    /**
+     Called whenever the location manager fails to update the location.
+     
+     - parameter manager: The `CLLocationManager` instance.
+     - parameter error: The `Error` that occurred.
+     */
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("Did location updates is called but failed getting location \(error)")
     }
     
+    /**
+     Called each time the location manager reports a change in the current heading.
+     
+     - parameter manager: The `CLLocationManager` instance.
+     - parameter newHeading: The new `CLHeading` after the change.
+     */
+    func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
+        self.heading = newHeading
+    }
+    
+    /**
+     Called each time the location manager reports a change in location.
+     
+     - parameter manager: The `CLLocationManager` instance.
+     - parameter locations: An array of `CLLocation` objects that have been updated.
+     */
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        let myLocation = locations.first!
+        let locValue = myLocation.coordinate
+        var instantSpeed = myLocation.speed
+        
+        let latString = locValue.latitude > 0 ? "\(locValue.latitude)° N" : "\(-locValue.latitude)° S"
+        let longString = locValue.longitude > 0 ? "\(locValue.longitude)° E" : "\(-locValue.longitude)° W"
+        
+        locationLabel.text = "\(latString) \(longString)"
+        
+        instantSpeed = max(instantSpeed, 0.0)
+        speedLabel.text = String(format: "Current Speed: %.1f mph", (instantSpeed * metersPerSecToMilesPerHour))
+        
+        if !isPaused {
+            displayClosestIntersection()
+        }
+        
+        if MotionHelper.accidentDetected {
+            MotionHelper.accidentDetected = false
+            
+            updateTextView(text: "sensor threshold reached (crash detected)")
+            wakeAlexa()
+        }
+        
+        lastLocation = myLocation
+        locationManager.stopUpdatingLocation()
+    }
+    
+    // MARK: MFMailComposeViewControllerDelegate functions
+    /**
+     Called after sending or cancel composed e-mail.
+     
+     - parameters controller: The `MFMailComposeViewController` instance.
+     - parameters didFinishWith: The `MFMailComposeResults` of the action.
+     - parameters error: If an error occurred, the `Error` instance.
+     */
+    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith: MFMailComposeResult, error: Error?) {
+        controller.dismiss(animated: true, completion: nil)
+    }
+    
+    
+    // MARK: AVS delegates
+    /**
+     A directive handler function for Alexa Voice Services.
+     
+     - parameter directives: An array of `DirectiveData` received back from AVS.
+     */
+    func directiveHandler(directives: [DirectiveData]) {
+        for directive in directives {
+            if (directive.contentType == "application/json") {
+                do {
+                    let jsonData = try JSONSerialization.jsonObject(with: directive.data) as! [String:Any]
+                    let directiveJson = jsonData["directive"] as! [String:Any]
+                    let header = directiveJson["header"] as! [String:String]
+                    
+                    // store the token for the Speak directive
+                    if (header["name"] == "Speak") {
+                        let payload = directiveJson["payload"] as! [String:String]
+                        avsToken = payload["token"]!
+                    }
+                } catch let ex {
+                    print("Directive data has an error: \(ex.localizedDescription)")
+                }
+            }
+        }
+        
+        for directive in directives {
+            // play the received audio
+            if (directive.contentType == "application/octet-stream") {
+                DispatchQueue.main.async {
+                    () -> Void in
+                    self.infoLabel.text = "Alexa is speaking"
+                }
+                do {
+                    avsClient.sendEvent(namespace: "SpeechSynthesizer", name: "SpeechStarted", token: avsToken!)
+                    
+                    try audioSession.setCategory(AVAudioSessionCategoryPlayAndRecord, with:[AVAudioSessionCategoryOptions.allowBluetooth, AVAudioSessionCategoryOptions.allowBluetoothA2DP, AVAudioSessionCategoryOptions.defaultToSpeaker])
+                    try audioPlayer = AVAudioPlayer(data: directive.data)
+                    audioPlayer.delegate = self
+                    audioPlayer.prepareToPlay()
+                    audioPlayer.volume = 1.0
+                    audioPlayer.play()
+                } catch let ex {
+                    print("Audio player has an error: \(ex.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    /**
+     A downchannel handler function for Alexa Voice Services.
+     
+     - parameter directive: The directive to be sent to AVS.
+     */
+    func downchannelHandler(directive: String) {
+        // data being sent to Alexa
+        do {
+            let jsonData = try JSONSerialization.jsonObject(with: directive.data(using: String.Encoding.utf8)!) as! [String:Any]
+            let directiveJson = jsonData["directive"] as! [String:Any]
+            let header = directiveJson["header"] as! [String:String]
+            if (header["name"] == "StopCapture") {
+                // Handle StopCapture
+            } else if (header["name"] == "SetAlert") {
+                // Handle SetAlert
+            }
+        } catch let ex {
+            print("Downchannel error: \(ex.localizedDescription)")
+        }
+    }
+    
+    /**
+     A ping handler function for Alexa Voice Services.
+     
+     - parameter success: Whether or not the ping was successful.
+     */
+    func pingHandler(success: Bool) {
+        DispatchQueue.main.async {
+            () -> Void in
+            if (success) {
+                self.infoLabel.text = "Ping success!"
+            } else {
+                self.infoLabel.text = "Ping failure!"
+            }
+        }
+    }
+    
+    /**
+     A sync handler function for Alexa Voice Services.
+     
+     - parameter success: Whether or not the sync was successful.
+     */
+    func syncHandler(success: Bool) {
+        DispatchQueue.main.async {
+            () -> Void in
+            if (success) {
+                self.infoLabel.text = "Sync success!"
+            } else {
+                self.infoLabel.text = "Sync failure!"
+            }
+        }
+    }
+    
+    // MARK: Other functions
+    /**
+     Update the display with the distance and name of the nearest intersection.
+     */
     func displayClosestIntersection()
     {
-        if CLLocationManager.locationServicesEnabled() /*&& self.intersections.count > 0*/ {
-            locationManager.requestLocation()
-            //let kalmanLocation = self.hcKalmanFilter?.processState(currentLocation: locationManager.location!)
-            
+        if CLLocationManager.locationServicesEnabled() {
             // set up array of intersections
             var intersections = [Intersection]()
-            if let inter = RealmHelper.sharedInstance.getObjects(type: Intersection.self) {
-                for i in inter {
-                    if let intersection = i as? Intersection {
+            if let dbObjs = realm.getObjects(type: Intersection.self) {
+                for obj in dbObjs {
+                    if let intersection = obj as? Intersection {
                         intersections.append(intersection)
                     }
                 }
             }
-
-            // make CLLocation array from intersections
-            var coords = [CLLocation]()
-            for i in intersections {
-                coords.append(i.getLocation())
-            }
-
             
-            let nearest = closestLocation(locations: coords, closestToLocation: locationManager.location!)
-            if nearest != nil {
-                dist = metersToFeet(from: nearest!.distance(from: locationManager.location!))
+            let currentLocation = locationManager.location!
+            let nearestIntersection = getClosestIntersection(intersections: intersections, closestToLocation: currentLocation)
+            
+            if nearestIntersection != nil {
+                let intersectionLocation = nearestIntersection!.getLocation()
                 
-                if dist < distanceThreshold && polling {
-                    // auto-poll server within quarter mile
-                    if electron != nil && !pause {
-                        //readLedState()
+                dist = metersToFeet(from: intersectionLocation.distance(from: currentLocation))
+                if dist < distanceThreshold && isOnTrip {
+                    appState = 2
+                    
+                    // auto-poll server within distance threshold
+                    if electron != nil && !isPaused {
+                        isPaused = true
                         readLoopState(silent: true)
+                        
                         // only auto-poll at most every 3 seconds
                         autoPollTimer = Timer.scheduledTimer(timeInterval: 3,
                                                              target: self,
                                                              selector: #selector(self.updateAutoPollPause),
                                                              userInfo: nil,
                                                              repeats: false)
-                        pause = true
-                    }
-                    
-                    // if the user is not already near an intersection, vibrate to notify
-                    if dist < 50.0 && !nearIntersection {
-                        nearIntersection = true
-                        triggerRelay(relayNumber: "1")
-                        AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
-                        
                     }
                     
                     // if the user was previously near an intersection, vibrate to notify
-                    if dist > 50.0 && nearIntersection {
-                        nearIntersection = false
+                    if dist > 50.0 && isNearIntersection {
+                        isNearIntersection = false
+                        appState = 3
+                        
                         AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
                     }
+                    
+                    // if the user is not already near an intersection, vibrate to notify
+                    if dist < 50.0 && !isNearIntersection {
+                        var headingThreshold = 10.0
+                        if let dbValue = realm.getObjects(type: ConfigItem.self)?.filter("key = 'HeadingThreshold'").first as? ConfigItem {
+                            if let val = Double(dbValue.value) {
+                                headingThreshold = val
+                            }
+                        }
+                        
+                        // check if we are heading within an acceptable degree of the intersection's headings
+                        for h in nearestIntersection!.headings {
+                            if abs((heading?.trueHeading)! - h) < headingThreshold {
+                                isNearIntersection = true
+                                appState = 4
+                                
+                                triggerRelay(relayNumber: "1")
+                                AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
+                                break
+                            }
+                        }
+                    }
                 } else {
-                    // polling = false
-                    // self.relayStateView.backgroundColor = UIColor.white
+                    // either we are not on a trip, or not within distance threshold
+                    // self.relayStateView.backgroundColor = UIColor.lightGray
                 }
                 
-                for i in intersections {
-                    if i.latitude == nearest!.coordinate.latitude &&
-                        i.longitude == nearest!.coordinate.longitude {
-                        nearestIntersectionLabel.text = String(format: "%.0f feet from \(i.title)", dist)
-                        break
-                    }
-                }
+                nearestIntersectionLabel.text = String(format: "%.0f feet from \(nearestIntersection!.title)", dist)
+            } else {
+                nearestIntersectionLabel.text = "Unable to determine nearest intersection."
             }
+        }
+        
+        switch self.appState {
+        case 1: self.relayStateView.backgroundColor = UIColor.lightGray
+            break
+        case 2: self.relayStateView.backgroundColor = UIColor.red
+            break
+        case 3: self.relayStateView.backgroundColor = UIColor.yellow
+            break
+        case 4: self.relayStateView.backgroundColor = UIColor.green
+            break
+        default: break
         }
     }
     
-    func readLedState() {
-        electron!.getVariable("led_state", completion: { (result:Any?, error:Error?) -> Void in
-            if let _ = error {
-                self.relayStateView.backgroundColor = UIColor.gray
-                self.updateTextView(text: "failed reading led status from device")
-                self.relayStateLabel.text = "Relay State\nUnknown";
-            }
-            else {
-                if let status = result as? String {
-                    if status == "on" {
-                        self.relayStateView.backgroundColor = UIColor.green
-                        self.relayStateLabel.text = "Relay State\nOn";
-                    }
-                    else {
-                        self.relayStateView.backgroundColor = UIColor.red
-                        self.relayStateLabel.text = "Relay State\nOff";
-                    }
-                    self.updateTextView(text: "led is \(status)")
-                }
-            }
-        })
-    }
-    
-    func readLoopState(silent: Bool) {
-        electron!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
-            if let _ = error {
-                if (!silent) {
-                    self.updateTextView(text: "failed reading loop state from device")
-                }
-            }
-            else {
-                if let status = result as? Int {
-                    if status == 1 {
-                        self.relayStateView.backgroundColor = UIColor.green
-                        self.relayStateLabel.text = "Relay State\nOn";
-                    }
-                    else {
-                        self.relayStateView.backgroundColor = UIColor.red
-                        self.relayStateLabel.text = "Relay State\nOff";
-                    }
-                    
-                    if (!silent) {
-                        self.updateTextView(text: "loop is \(status)")
-                    }
-                }
-            }
-        })
-    }
-    
-    func toggleLedState() {
-        let task = electron!.callFunction("toggle_led", withArguments: nil) { (resultCode : NSNumber?, error : Error?) -> Void in
-            if (error == nil) {
-                self.updateTextView(text: "toggle led successful")
-            }
-        }
-        let bytes : Int64 = task.countOfBytesExpectedToReceive
-        if bytes > 0 {
-            // ..do something with bytesToReceive
-        }
-    }
-    
-    @IBAction func pollServerButtonClick(_ sender: Any) {
-        //readLedState()
-        updateTextView(text: "polling server")
-        readLoopState(silent: false)
-        pollServerButton.isEnabled = false
-        pollServerTimer = Timer.scheduledTimer(timeInterval: 5,
-                                               target: self,
-                                               selector: #selector(self.updatePollServerButton),
-                                               userInfo: nil,
-                                               repeats: false)
-    }
-    
-    @IBAction func pushStartButton(_ sender: Any) {
-        if startButton.titleLabel?.text == "Start Trip" {
-            startButton.setTitle("Stop Trip", for: .normal)
-            polling = true
-            self.updateTextView(text: "starting bicycle trip")
-        }
-        else if startButton.titleLabel?.text == "Stop Trip" {
-            startButton.setTitle("Start Trip", for: .normal)
-            relayStateView.backgroundColor = UIColor.white
-            autoPollTimer?.invalidate()
-            locationTimer?.invalidate()
-            pollServerTimer?.invalidate()
-            pause = false
-            polling = false
-            self.updateTextView(text: "stopping bicycle trip")
-        }
-    }
-    
-    func exportCsv() {
-        let formatter = DateFormatter()
+    /**
+     Export a CSV file of sensor data and send via e-mail.
+     */
+    func exportAndSendCsv() {
         formatter.dateFormat = "yyyyMMddHHmmss"
+        
         let dateString = formatter.string(from: Date())
         let fileName = "sensor\(dateString).csv"
         let path = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(fileName)
         
-        var csvText = "Date,Type,x,y,z\n"
+        var csvText = "Date,Type,val\n"
         if motionManager.isDeviceMotionAvailable {
             let count = MotionHelper.motionReadings.count
             
@@ -423,9 +536,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             } else {
                 //showErrorAlert("Error", msg: "There is no data to export")
             }
-        }
-        else {
+        } else {
             let count = MotionHelper.accelerometerReadings.count
+            csvText = "Date,Type,x,y,z\n"
             
             if count > 0 {
                 for reading in MotionHelper.accelerometerReadings {
@@ -447,6 +560,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             
             if MFMailComposeViewController.canSendMail() {
                 let emailController = MFMailComposeViewController()
+                
                 emailController.mailComposeDelegate = self
                 emailController.setToRecipients(["bwilli11@uoregon.edu"])
                 emailController.setSubject("Accelerometer data")
@@ -464,56 +578,312 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
     }
     
-    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith: MFMailComposeResult, error: Error?) {
-        controller.dismiss(animated: true, completion: nil)
+    /**
+     Get the closest intersection to the current location or return nil.
+     
+     - parameter intersections: An array of `Intersection` objects to compare with the current location.
+     - parameter location: The current `CLLocation` to find the nearest intersection to.
+     */
+    func getClosestIntersection(intersections: [Intersection], closestToLocation location: CLLocation) -> Intersection? {
+        if let closestIntersection = intersections.min(by: { location.distance(from: $0.getLocation()) < location.distance(from: $1.getLocation()) }) {
+            return closestIntersection
+        } else {
+            nearestIntersectionLabel.text = "locations is empty"
+            return nil
+        }
     }
     
+    /**
+     Get a list of devices from the Particle cloud.
+     */
+    func getParticleDevices() {
+        ParticleCloud.sharedInstance().getDevices {
+            (devices:[ParticleDevice]?, error:Error?) -> Void in
+            if let _ = error {
+                self.infoLabel.text = "check your internet connectivity"
+            }
+            else {
+                if let d = devices {
+                    for device in d {
+                        if device.name == "beacon_2" {
+                            self.electron = device
+                            self.updateTextView(text: "found \(device.name!)")
+                            self.pollServerButton.isEnabled = true
+                            self.triggerRelayButton.isEnabled = true
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     Convert a value from meters to feet.
+     
+     - parameter from: The number of meters to convert.
+     */
+    func metersToFeet(from: Double) -> Double {
+        return from * 3.28084
+    }
+    
+    /**
+     Prepare an audio session for recording.
+     */
+    func prepareAudioSession() {
+        do {
+            let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let fileURL = directory.appendingPathComponent(Settings.Audio.TEMP_FILE_NAME)
+            try audioRecorder = AVAudioRecorder(url: fileURL, settings: Settings.Audio.RECORDING_SETTING as [String : AnyObject])
+            try audioSession.setCategory(AVAudioSessionCategoryPlayAndRecord, with:[AVAudioSessionCategoryOptions.allowBluetooth, AVAudioSessionCategoryOptions.allowBluetoothA2DP, AVAudioSessionCategoryOptions.defaultToSpeaker])
+        } catch let ex {
+            print("Audio session has an error: \(ex.localizedDescription)")
+        }
+    }
+    
+    /**
+     Poll the Electron device for the current loop state.
+     
+     - parameter silent: Whether or not the result should be displayed in the textView.
+     */
+    func readLoopState(silent: Bool) {
+        electron!.getVariable("loop_state", completion: { (result:Any?, error:Error?) -> Void in
+            if let _ = error {
+                if (!silent) {
+                    self.updateTextView(text: "failed reading loop state from device")
+                }
+            }
+            else {
+                if let status = result as? Int {
+                    if status == 1 {
+                        self.relayStateLabel.text = "Relay State\nOn";
+                    }
+                    else {
+                        self.relayStateLabel.text = "Relay State\nOff";
+                    }
+                    
+                    if (!silent) {
+                        self.updateTextView(text: "loop is \(status == 0 ? "off" : "on")")
+                    }
+                }
+            }
+        })
+    }
+    
+    /**
+     Upload a file to Amazon S3 storage.
+     
+     - parameter url: The `URL` of the file to upload.
+     */
+    internal func s3Upload(url: URL) {
+        let credentialsProvider = AWSStaticCredentialsProvider(accessKey: Settings.S3.S3_ACCESS_KEY, secretKey: Settings.S3.S3_SECRET_KEY)
+        let configuration = AWSServiceConfiguration(region:.USEast1, credentialsProvider:credentialsProvider)
+        
+        formatter.dateFormat = "yyyyMMdd HHmmss.SSSS"
+        let dateString = formatter.string(from: NSDate() as Date)
+        
+        AWSServiceManager.default().defaultServiceConfiguration = configuration
+        let transferManager = AWSS3TransferManager.default()
+        let uploadRequest = AWSS3TransferManagerUploadRequest()!
+        
+        uploadRequest.bucket = "cycle-buddy-reports"
+        uploadRequest.key = "\(dateString).wav"
+        uploadRequest.body = url
+        
+        // upload the initial file
+        transferManager.upload(uploadRequest).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+            
+            if let error = task.error as NSError? {
+                if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
+                    switch code {
+                    case .cancelled, .paused:
+                        break
+                    default:
+                        print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
+                    }
+                } else {
+                    print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
+                }
+                return nil
+            }
+            
+            _ = task.result
+            print("Upload complete for: \(String(describing: uploadRequest.key))")
+            return nil
+        })
+        
+        // now upload the companion text file
+        do {
+            let locationString = "string of gps coords or whatever location info"
+            let textUrl = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("location.txt")
+            try locationString.write(to: textUrl!, atomically: true, encoding: String.Encoding.utf8)
+            
+            uploadRequest.bucket = "cycle-buddy-reports"
+            uploadRequest.key = "\(dateString).txt"
+            uploadRequest.body = textUrl!
+            
+            transferManager.upload(uploadRequest).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+                
+                if let error = task.error as NSError? {
+                    if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
+                        switch code {
+                        case .cancelled, .paused:
+                            break
+                        default:
+                            print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
+                        }
+                    } else {
+                        print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
+                    }
+                    return nil
+                }
+                
+                _ = task.result
+                print("Upload complete for: \(String(describing: uploadRequest.key))")
+                return nil
+            })
+        } catch let ex {
+            print("Error writing location information: \(ex.localizedDescription)")
+        }
+    }
+    
+    /**
+     Trigger a relay using the Particle API.
+     
+     - parameter relayNumber: The number of the relay to send a trigger to.
+     */
     func triggerRelay(relayNumber: String) {
         if dist > 100 {
-            self.updateTextView(text: "can only manually trigger relay within 100 feet")
-        }
-        else {
-            self.updateTextView(text: "triggering relay #\(relayNumber)")
+            updateTextView(text: "can only trigger relay within 100 feet")
+        } else {
+            updateTextView(text: "triggering relay #\(relayNumber)")
             
-            let task = electron!.callFunction("relay_on", withArguments: [relayNumber]) { (resultCode : NSNumber?, error : Error?) -> Void in
+            let task = electron!.callFunction("relay_on", withArguments: [relayNumber]) {
+                (resultCode: NSNumber?, error: Error?) -> Void in
                 if (error == nil) {
+                    // NOTE: readLoopState() may return "off" even after triggering the relay
+                    // because the loop state is not updated until the box receives a message back
+                    // from the controller that the relay on message was received
                     self.readLoopState(silent: false)
-                }
-                else {
+                } else {
                     self.updateTextView(text: "error triggering relay")
                 }
             }
-            let bytes : Int64 = task.countOfBytesExpectedToReceive
+            
+            let bytes = task.countOfBytesExpectedToReceive
             if bytes > 0 {
                 // ..do something with bytesToReceive
             }
         }
     }
     
-    func requestDidSucceed(_ apiResult: APIResult) {
-        switch(apiResult.api) {
-        case API.authorizeUser:
-            print("Authorized")
-            lwa.getAccessToken(delegate: self)
-        case API.getAccessToken:
-            print("Login successfully!")
-            LoginWithAmazonToken.sharedInstance.loginWithAmazonToken = apiResult.result as! String?
-            let storyboard = UIStoryboard(name: "Main", bundle: nil)
-            let controller = storyboard.instantiateViewController(withIdentifier: "AlexaViewController") as! AlexaViewController
-            controller.electron = self.electron
-            self.navigationController?.pushViewController(controller, animated: true)
-        case API.clearAuthorizationState:
-            print("Logout successfully!")
-        default:
-            return
+    /**
+     Append the text to the textView, with the current date/time.
+     
+     - parameter text: The `String` to append to the textView.
+     */
+    internal func updateTextView(text: String) {
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss" // .SSSS milliseconds
+        
+        textView.text = textView.text + "[\(formatter.string(from: NSDate() as Date))] \(text)\n"
+        
+        let bottom = NSMakeRange(textView.text.count - 1, 1)
+        textView.scrollRangeToVisible(bottom)
+    }
+    
+    /**
+     Send the designated Alexa wake word audio to AVS.
+     */
+    func wakeAlexa() {
+        do {
+            let url = Bundle.main.url(forResource: "wake", withExtension: "wav")
+            let wake = try Data(contentsOf: url!)
+            
+            avsClient.postRecording(audioData: wake)
+            
+            // https://developer.amazon.com/docs/alexa-voice-service/recommended-media-support.html
+            // mp3, aac, wav, etc.
+            // try avsClient.postRecording(audioData: Data(contentsOf: fileURL))
+        } catch let ex {
+            print("AVS Client threw an error: \(ex.localizedDescription)")
+            infoLabel.text = "wake word audio file not found"
         }
     }
     
-    func requestDidFail(_ errorResponse: APIError) {
-        print("Error: \(errorResponse.error.message)")
+    // MARK: IBActions
+    @IBAction func loginWithAmazonButtonClick(_ sender: Any) {
+        if (!isLoggedIn) {
+            lwa.login(delegate: self)
+        } else {
+            let logoutConfirm = UIAlertController(title: "Logout", message: "You will no longer be able to interact with Alexa.", preferredStyle: UIAlertControllerStyle.alert)
+            
+            logoutConfirm.addAction(UIAlertAction(title: "Yes", style: .default, handler: {
+                (action: UIAlertAction!) in
+                self.lwa.logout(delegate: self)
+            }))
+            
+            logoutConfirm.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: {
+                (action: UIAlertAction!) in
+                print("User cancelled logout.")
+            }))
+            
+            present(logoutConfirm, animated: true, completion: nil)
+        }
     }
     
-    @IBAction func recordButton(_ sender: Any) {
+    @IBAction func pollServerButtonClick(_ sender: Any) {
+        updateTextView(text: "polling server")
+        readLoopState(silent: false)
+        pollServerButton.isEnabled = false
+        pollServerTimer = Timer.scheduledTimer(timeInterval: 5,
+                                               target: self,
+                                               selector: #selector(self.updatePollServerButton),
+                                               userInfo: nil,
+                                               repeats: false)
+    }
+    
+    @IBAction func recordButtonCancel(_ sender: Any) {
+        if (self.isRecording) {
+            audioRecorder.stop()
+            self.isRecording = false
+        }
+    }
+    
+    @IBAction func recordButtonDown(_ sender: Any) {
+        prepareAudioSession()
+        
+        audioRecorder.prepareToRecord()
+        audioRecorder.record()
+        isRecording = true
+    }
+    
+    @IBAction func recordButtonUp(_ sender: Any) {
+        if (self.isRecording) {
+            isRecording = false
+            audioRecorder.stop()
+            
+            do {
+                //                s3Upload(url: audioRecorder.url)
+                // TODO: upload to S3 if recording report, otherwise send to AVS
+                
+                try avsClient.postRecording(audioData: Data(contentsOf: audioRecorder.url))
+            } catch let ex {
+                print("AVS Client threw an error: \(ex.localizedDescription)")
+            }
+        }
+    }
+    
+    @IBAction func recordReportButtonClick(_ sender: Any) {
+        if recordReportButton.title(for: .normal) == "PRESS TO RECORD REPORT" {
+            recordReportButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
+            recordReportButton.setTitle("PRESS STOP TO FINISH", for: .normal)
+        }
+        else if recordReportButton.title(for: .normal) == "PRESS STOP TO FINISH" {
+            recordReportButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
+            recordReportButton.setTitle("PRESS TO RECORD REPORT", for: .normal)
+        }
+    }
+    
+    @IBAction func recordSensorsButtonClick(_ sender: Any) {
         if recordSensors.title(for: .normal) == "record" {
             MotionHelper.startMotionUpdates(motionManager: self.motionManager)
             recordSensors.setImage(UIImage(named: "stop-30px.png"), for: .normal)
@@ -524,7 +894,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             recordSensors.setTitle("send", for: .normal)
         } else {
             // e-mail csv file
-            exportCsv()
+            exportAndSendCsv()
             recordSensors.setImage(UIImage(named: "record-30px.png"), for: .normal)
             recordSensors.setTitle("record", for: .normal)
         }
@@ -541,8 +911,24 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         triggerRelay(relayNumber: number)
     }
     
-    @IBAction func loginWithAmazonButtonClick(_ sender: Any) {
-        lwa.login(delegate: self)
+    @IBAction func tripButtonClick(_ sender: Any) {
+        if startButton.titleLabel?.text == "Start Trip" {
+            startButton.setTitle("Stop Trip", for: .normal)
+            appState = 2
+            isOnTrip = true
+            updateTextView(text: "starting bicycle trip")
+            relayStateView.backgroundColor = UIColor.red
+        }
+        else if startButton.titleLabel?.text == "Stop Trip" {
+            startButton.setTitle("Start Trip", for: .normal)
+            autoPollTimer?.invalidate()
+            locationTimer?.invalidate()
+            pollServerTimer?.invalidate()
+            isPaused = false
+            appState = 1
+            isOnTrip = false
+            updateTextView(text: "stopping bicycle trip")
+            relayStateView.backgroundColor = UIColor.lightGray
+        }
     }
 }
-

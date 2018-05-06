@@ -10,5 +10,5 @@ import Foundation
 
 public class LoginWithAmazonToken: NSObject {
     public static let sharedInstance = LoginWithAmazonToken()
-    public var loginWithAmazonToken:String!
+    public var loginWithAmazonToken: String!
 }

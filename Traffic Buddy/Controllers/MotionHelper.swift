@@ -11,15 +11,17 @@ import CoreMotion
 import UIKit
 
 class MotionHelper {
-    static let kMotionUpdateInterval = 0.2
     static let formatter = DateFormatter()
+    static let kMotionUpdateInterval = 0.2
     static var accelerometerReadings = [String]()
+    static var accidentDetected = false
     static var gyroscopeReadings = [String]()
     static var motionReadings = [String]()
-    static var accidentDetected = false
     
     /**
-     *  Configure the sensor data callback.
+     Configure the sensor data callback.
+     
+     - parameter motionManager: The `CMMotionManager` instance.
      */
     static func startMotionUpdates(motionManager: CMMotionManager) {
         if motionManager.isDeviceMotionAvailable {
@@ -50,6 +52,11 @@ class MotionHelper {
         }
     }
 
+    /**
+     Stop tracking motion sensor data.
+     
+     - parameter motionManager: The `CMMotionManager` instance to stop.
+    */
     static func stopMotionUpdates(motionManager: CMMotionManager) {
         if motionManager.isAccelerometerActive {
             motionManager.stopAccelerometerUpdates()
@@ -68,13 +75,14 @@ class MotionHelper {
      Report the device motion sensor data.
      
      - parameter motion: A `CMDeviceMotion` holding the sensor data to report.
+     - parameter readings: A `String` array to append the reading to.
      */
     internal static func report(motion: CMDeviceMotion?, readings: inout [String]) {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
         let acc_x = (motion?.userAcceleration.x)!
         let acc_y = (motion?.userAcceleration.y)!
         let acc_z = (motion?.userAcceleration.z)!
-        let yaw = (motion?.attitude.yaw)!
+        let _ = (motion?.attitude.yaw)!
         let pitch = (motion?.attitude.pitch)!
         let roll = (motion?.attitude.roll)!
         
@@ -101,10 +109,10 @@ class MotionHelper {
     }
 
     /**
-     Sets acceleration data values to a specified `DataTableSection`.
+     Report the device accelerometer data.
      
      - parameter acceleration: A `CMAcceleration` holding the values to set.
-     - parameter readings:     A String array to append the reading to.
+     - parameter readings: A `String` array to append the reading to.
      */
     internal static func report(acceleration: CMAcceleration?, readings: inout [String]) {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
@@ -117,10 +125,10 @@ class MotionHelper {
     }
 
     /**
-     Sets rotation rate data values to a specified `DataTableSection`.
+     Report the device gyroscope data.
      
      - parameter rotationRate: A `CMRotationRate` holding the values to set.
-     - parameter section:      Section these values need to be applied to.
+     - parameter readings: A `String` array to append the reading to.
      */
     internal static func report(rotationRate: CMRotationRate?, readings: inout [String]) {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSSS"
@@ -135,8 +143,7 @@ class MotionHelper {
     /**
      Logs an error in a consistent format.
      
-     - parameter error:  Error value.
-     - parameter sensor: `DeviceSensor` that triggered the error.
+     - parameter error: The `Error` value to log.
      */
     fileprivate static func log(error: Error?) {
         guard let error = error else { return }

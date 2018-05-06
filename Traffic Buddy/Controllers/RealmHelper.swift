@@ -10,9 +10,9 @@ import UIKit
 import RealmSwift
 
 class RealmHelper {
-    private var database: Realm?
     static let sharedInstance = RealmHelper()
-    
+    private var database: Realm?
+
     private init() {
         if let _ = SyncUser.current {
             // already logged in
@@ -37,29 +37,44 @@ class RealmHelper {
         }
     }
     
-    // delete particular object
+    /**
+     Delete an object from the database.
+     
+     - parameter obj: The `Object` to delete.
+    */
     func deleteObject(obj: Object) {
         try! self.database?.write ({
             self.database?.delete(obj)
         })
     }
     
-    // save a new object to database
+    /**
+     Insert a new object into the database.
+     
+     - parameter obj: The `Object` to save.
+    */
     func saveObject(obj: Object) {
         try! self.database?.write ({
-            // update existing?
             self.database?.add(obj, update: false)
         })
     }
     
-    // edit an existing object
+    /**
+     Update an existing database object.
+     
+     - parameter obj: The `Object` to update. If the object doesn't exist, it will be added.
+    */
     func editObject(obj: Object) {
         try! self.database?.write ({
             self.database?.add(obj, update: true)
         })
     }
     
-    // returns an array as Results<object>?
+    /**
+     Get an array of objects from the database.
+     
+     - parameter type: The `Type` of objects to query from the database.
+    */
     func getObjects(type: Object.Type) -> Results<Object>? {
         if self.database != nil {
             return self.database!.objects(type)
@@ -67,6 +82,9 @@ class RealmHelper {
         return nil
     }
     
+    /**
+     Delete all objects from the database.
+    */
     func deleteAllFromDatabase()  {
         try! database?.write {
             database?.deleteAll()

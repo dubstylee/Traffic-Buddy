@@ -10,11 +10,12 @@ import Foundation
 import Realm
 import RealmSwift
 
+@objcMembers
 class ConfigItem: Object {
-    @objc dynamic var id: String = UUID().uuidString
-    @objc dynamic var key: String = ""
-    @objc dynamic var value: String = ""
-    @objc dynamic var timestamp: Date = Date()
+    dynamic var id: String = UUID().uuidString
+    dynamic var key: String = ""
+    dynamic var value: String = ""
+    dynamic var timestamp: Date = Date()
     
     override static func primaryKey() -> String? {
         return "id"

@@ -192,12 +192,12 @@
                         <outlet property="alexaButton" destination="Tpq-kg-Aoq" id="GyN-tn-6Es"/>
                         <outlet property="infoLabel" destination="Crt-HE-RO6" id="2xi-72-kSz"/>
                         <outlet property="locationLabel" destination="zBf-rY-2Bg" id="bGo-tR-Vys"/>
-                        <outlet property="lwaButton" destination="9RS-4v-UI9" id="T2O-s8-c2s"/>
+                        <outlet property="loginButton" destination="9RS-4v-UI9" id="T2O-s8-c2s"/>
                         <outlet property="mainBackground" destination="8bC-Xf-vdC" id="GSL-Lj-snT"/>
                         <outlet property="nearestIntersectionLabel" destination="xuT-zs-0Lk" id="IiQ-k6-gak"/>
                         <outlet property="pollServerButton" destination="UBs-vp-fN6" id="avY-fK-gS7"/>
                         <outlet property="recordReportButton" destination="czJ-gp-zvg" id="h97-xT-Fxj"/>
-                        <outlet property="recordSensors" destination="UZI-Mk-KAm" id="9eO-8L-p0v"/>
+                        <outlet property="recordSensorsButton" destination="UZI-Mk-KAm" id="9eO-8L-p0v"/>
                         <outlet property="relayStateLabel" destination="4yt-Tq-MDd" id="uPW-bP-Ubc"/>
                         <outlet property="relayStateView" destination="fga-4n-y47" id="ICF-DC-cjJ"/>
                         <outlet property="speedLabel" destination="inz-n8-6qz" id="AAh-Bo-3WG"/>

@@ -60,12 +60,12 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     @IBOutlet weak var alexaButton: UIButton!
     @IBOutlet weak var infoLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
-    @IBOutlet weak var lwaButton: UIButton!
+    @IBOutlet weak var loginButton: UIButton!
     @IBOutlet weak var mainBackground: UIView!
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
     @IBOutlet weak var pollServerButton: UIButton!
     @IBOutlet weak var recordReportButton: UIButton!
-    @IBOutlet weak var recordSensors: UIButton!
+    @IBOutlet weak var recordSensorsButton: UIButton!
     @IBOutlet weak var relayStateLabel: UITextView!
     @IBOutlet weak var relayStateView: UIView!
     @IBOutlet weak var speedLabel: UILabel!
@@ -73,7 +73,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var triggerRelayButton: UIButton!
 
-    // MARK: UIViewController functions
+    // MARK: UIViewController methods
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -144,7 +144,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         super.viewWillDisappear(animated)
     }
     
-    // MARK: Objective-C delegate functions
+    // MARK: Objective-C delegate methods
     @objc func updateAutoPollPause() {
         isPaused = false
     }
@@ -157,7 +157,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         pollServerButton.isEnabled = true
     }
     
-    // MARK: AIAuthenticationDelegate functions
+    // MARK: AIAuthenticationDelegate methods
     /**
      The API request to LoginWithAmazon failed.
      
@@ -180,13 +180,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         case API.getAccessToken:
             print("Login successfully!")
             LoginWithAmazonToken.sharedInstance.loginWithAmazonToken = apiResult.result as! String?
-            lwaButton.setImage(UIImage(named: "logout-30px.png"), for: .normal)
+            loginButton.setImage(UIImage(named: "logout-30px.png"), for: .normal)
             isLoggedIn = true
             alexaButton.isHidden = false
             recordReportButton.isHidden = false
         case API.clearAuthorizationState:
             print("Logout successfully!")
-            lwaButton.setImage(UIImage(named: "amazon-30px.png"), for: .normal)
+            loginButton.setImage(UIImage(named: "amazon-30px.png"), for: .normal)
             isLoggedIn = false
             alexaButton.isHidden = true
             recordReportButton.isHidden = true
@@ -195,7 +195,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         }
     }
 
-    // MARK: AVAudioPlayerDelegate functions
+    // MARK: AVAudioPlayerDelegate methods
     /**
      An error occurred during audio decoding.
      
@@ -219,7 +219,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         avsClient.sendEvent(namespace: "SpeechSynthesizer", name: "SpeechFinished", token: avsToken!)
     }
     
-    // MARK: AVAudioRecorderDelegate functions
+    // MARK: AVAudioRecorderDelegate methods
     /**
      The audio recorder finished recording.
      
@@ -240,7 +240,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         print("Audio recorder has an error: \(String(describing: error?.localizedDescription))")
     }
     
-    // MARK: CLLocationManagerDelegate functions
+    // MARK: CLLocationManagerDelegate methods
     /**
      Called each time a user changes location access preference.
      
@@ -421,7 +421,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         }
     }
     
-    // MARK: Other functions
+    // MARK: Other methods and functions
     /**
      Update the display with the distance and name of the nearest intersection.
      */
@@ -484,7 +484,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                                 isNearIntersection = true
                                 appState = 4
                                 
-                                triggerRelay(relayNumber: "1")
+                                triggerRelay(relayNumber: "1", manual: false)
                                 AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
                                 break
                             }
@@ -751,9 +751,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
      
      - parameter relayNumber: The number of the relay to send a trigger to.
      */
-    func triggerRelay(relayNumber: String) {
-        if dist > 100 {
-            updateTextView(text: "can only trigger relay within 100 feet")
+    func triggerRelay(relayNumber: String, manual: Bool) {
+        if dist > 100 && manual {
+            updateTextView(text: "too far away (> 100ft)")
         } else {
             updateTextView(text: "triggering relay #\(relayNumber)")
             
@@ -884,31 +884,31 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     }
     
     @IBAction func recordSensorsButtonClick(_ sender: Any) {
-        if recordSensors.title(for: .normal) == "record" {
+        if recordSensorsButton.title(for: .normal) == "record" {
             MotionHelper.startMotionUpdates(motionManager: self.motionManager)
-            recordSensors.setImage(UIImage(named: "stop-30px.png"), for: .normal)
-            recordSensors.setTitle("stop", for: .normal)
-        } else if recordSensors.title(for: .normal) == "stop" {
+            recordSensorsButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
+            recordSensorsButton.setTitle("stop", for: .normal)
+        } else if recordSensorsButton.title(for: .normal) == "stop" {
             MotionHelper.stopMotionUpdates(motionManager: self.motionManager)
-            recordSensors.setImage(UIImage(named: "email-30px.png"), for: .normal)
-            recordSensors.setTitle("send", for: .normal)
+            recordSensorsButton.setImage(UIImage(named: "email-30px.png"), for: .normal)
+            recordSensorsButton.setTitle("send", for: .normal)
         } else {
             // e-mail csv file
             exportAndSendCsv()
-            recordSensors.setImage(UIImage(named: "record-30px.png"), for: .normal)
-            recordSensors.setTitle("record", for: .normal)
+            recordSensorsButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
+            recordSensorsButton.setTitle("record", for: .normal)
         }
     }
     
     @IBAction func settingsButtonClick(_ sender: Any) {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        let controller = storyboard.instantiateViewController(withIdentifier: "SettingsView") //as! SettingsViewController
+        let controller = storyboard.instantiateViewController(withIdentifier: "SettingsView")
         self.navigationController?.pushViewController(controller, animated: true)
     }
     
     @IBAction func triggerRelayButtonClick(_ sender: Any) {
         let number = "1"
-        triggerRelay(relayNumber: number)
+        triggerRelay(relayNumber: number, manual: true)
     }
     
     @IBAction func tripButtonClick(_ sender: Any) {

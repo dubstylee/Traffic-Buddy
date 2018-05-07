@@ -42,6 +42,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     var isNearIntersection = false
     var isOnTrip = false
     var isPaused = false
+    var isRecordingReport = false
     var lastLocation: CLLocation?
     var nearestIntersection: CLLocation?
     var particleToken: String?
@@ -222,6 +223,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         infoLabel.text = "Cycle Buddy"
         
         avsClient.sendEvent(namespace: "SpeechSynthesizer", name: "SpeechFinished", token: avsToken!)
+        if isRecordingReport {
+            startRecordingNextStep()
+        }
     }
     
     // MARK: AVAudioRecorderDelegate methods
@@ -760,6 +764,18 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     }
     
     /**
+     Start recording the next part of the accident report.
+    */
+    func startRecordingNextStep() {
+        if recordReportButton.title(for: .normal) == "PRESS TO RECORD REPORT" {
+            recordReportButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
+            recordReportButton.setTitle("PRESS STOP TO FINISH", for: .normal)
+            
+            audioRecorder.record()
+        }
+    }
+    
+    /**
      Trigger a relay using the Particle API.
      
      - parameter relayNumber: The number of the relay to send a trigger to.
@@ -881,7 +897,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             }
         }
     }
-    
+
     @IBAction func recordReportButtonClick(_ sender: Any) {
         if recordReportButton.title(for: .normal) == "PRESS TO RECORD REPORT" {
             recordReportButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
@@ -895,6 +911,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                 audioRecorder.prepareToRecord()
             }
             audioRecorder.record()
+            isRecordingReport = true
         }
         else if recordReportButton.title(for: .normal) == "PRESS STOP TO FINISH" {
             recordReportButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
@@ -923,6 +940,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             }
             else {
                 reportStep = 1
+                isRecordingReport = false
                 weatherCheckbox.isHidden = true
                 weatherCheckbox.isChecked = false
                 lightCheckbox.isHidden = true

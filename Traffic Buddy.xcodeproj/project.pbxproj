@@ -28,6 +28,8 @@
 		D361D0E11F81EB2E0060F25A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D361D0DF1F81EB2E0060F25A /* LaunchScreen.storyboard */; };
 		D361D0EA1F81EC120060F25A /* Intersection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0E91F81EC120060F25A /* Intersection.swift */; };
 		D3AE0BA01FB95F1D00DCD5BA /* particle.conf in Resources */ = {isa = PBXBuildFile; fileRef = D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */; };
+		D3E5C7C2209FCFF20009BFA1 /* step.wav in Resources */ = {isa = PBXBuildFile; fileRef = D3E5C7C1209FCFF20009BFA1 /* step.wav */; };
+		D3E5C7C4209FFE370009BFA1 /* Checkbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E5C7C3209FFE370009BFA1 /* Checkbox.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +58,8 @@
 		D361D0E21F81EB2E0060F25A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D361D0E91F81EC120060F25A /* Intersection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intersection.swift; sourceTree = "<group>"; };
 		D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = particle.conf; path = "Traffic Buddy/particle.conf"; sourceTree = "<group>"; };
+		D3E5C7C1209FCFF20009BFA1 /* step.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = step.wav; sourceTree = "<group>"; };
+		D3E5C7C3209FFE370009BFA1 /* Checkbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Checkbox.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +102,7 @@
 			children = (
 				D35DD259208D635500868F8D /* finish.wav */,
 				D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */,
+				D3E5C7C1209FCFF20009BFA1 /* step.wav */,
 				D349B36E205DCD4F007442F6 /* wake.wav */,
 				D361D0D51F81EB2E0060F25A /* Traffic Buddy */,
 				D361D0D41F81EB2E0060F25A /* Products */,
@@ -135,6 +140,7 @@
 				85C7AE2C20462DB900B65F16 /* LoginWithAmazonProxy.swift */,
 				85C7AE302046307100B65F16 /* LoginWithAmazonToken.swift */,
 				85C7AE2E20462DEA00B65F16 /* Settings.swift */,
+				D3E5C7C3209FFE370009BFA1 /* Checkbox.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -228,6 +234,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D35DD25A208D635500868F8D /* finish.wav in Resources */,
+				D3E5C7C2209FCFF20009BFA1 /* step.wav in Resources */,
 				D349B36F205DCD50007442F6 /* wake.wav in Resources */,
 				D361D0E11F81EB2E0060F25A /* LaunchScreen.storyboard in Resources */,
 				D3AE0BA01FB95F1D00DCD5BA /* particle.conf in Resources */,
@@ -315,6 +322,7 @@
 				D34BAF0E20958AF7001B6E1A /* SettingsViewController.swift in Sources */,
 				85C7AE33204631EB00B65F16 /* AlexaVoiceServiceClient.swift in Sources */,
 				85C7AE2F20462DEA00B65F16 /* Settings.swift in Sources */,
+				D3E5C7C4209FFE370009BFA1 /* Checkbox.swift in Sources */,
 				D361D0D91F81EB2E0060F25A /* ViewController.swift in Sources */,
 				D34BAF1020962AA4001B6E1A /* RealmHelper.swift in Sources */,
 				D361D0D71F81EB2E0060F25A /* AppDelegate.swift in Sources */,

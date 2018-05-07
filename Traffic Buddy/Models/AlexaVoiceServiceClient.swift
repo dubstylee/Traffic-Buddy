@@ -13,7 +13,7 @@ struct DirectiveData {
     var data: Data
 }
 
-class AlexaVoiceServiceClient: NSObject, URLSessionDelegate {
+class AlexaVoiceServiceClient: NSObject, URLSessionDelegate, URLSessionDataDelegate {
     let DIRECTIVES_ENDPOINT = "https://avs-alexa-na.amazon.com/v20160207/directives"
     let EVENTS_ENDPOINT: String = "https://avs-alexa-na.amazon.com/v20160207/events"
     let PING_ENDPOINT: String = "https://avs-alexa-na.amazon.com/ping"
@@ -64,13 +64,15 @@ class AlexaVoiceServiceClient: NSObject, URLSessionDelegate {
         }).resume()
     }
     
-    // MARK: URLSessionDelegate methods
+    // MARK: URLSessionDataDelegate methods
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        print("in url session handler")
         // Downchannel directives are processed here
         let dataString = String(data: data, encoding: String.Encoding.utf8) ?? "Downchannel directives data is not String"
         let firstBracket = dataString.range(of: "{")!
         let lastBracket = dataString.range(of: "}", options: .backwards)!
         let jsonString = dataString[firstBracket.lowerBound...lastBracket.upperBound]
+        print("JSON: \(jsonString)")
         downchannelHandler?(String(jsonString))
     }
     

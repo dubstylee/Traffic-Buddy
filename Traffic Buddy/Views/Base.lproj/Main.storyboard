@@ -183,6 +183,21 @@
                                     <action selector="recordReportButtonClick:" destination="BYZ-38-t0r" eventType="touchUpInside" id="994-cd-eV3"/>
                                 </connections>
                             </button>
+                            <button hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="VBB-zN-OiF" customClass="CheckBox" customModule="Traffic_Buddy" customModuleProvider="target">
+                                <rect key="frame" x="16" y="492" width="95" height="22"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Weather"/>
+                            </button>
+                            <button hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="OCW-NG-8sf" customClass="CheckBox" customModule="Traffic_Buddy" customModuleProvider="target">
+                                <rect key="frame" x="264" y="492" width="95" height="22"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Other"/>
+                            </button>
+                            <button hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pVf-Fi-FFj" customClass="CheckBox" customModule="Traffic_Buddy" customModuleProvider="target">
+                                <rect key="frame" x="140" y="492" width="95" height="22"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Light"/>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
@@ -191,10 +206,12 @@
                     <connections>
                         <outlet property="alexaButton" destination="Tpq-kg-Aoq" id="GyN-tn-6Es"/>
                         <outlet property="infoLabel" destination="Crt-HE-RO6" id="2xi-72-kSz"/>
+                        <outlet property="lightCheckbox" destination="pVf-Fi-FFj" id="pso-oJ-MSQ"/>
                         <outlet property="locationLabel" destination="zBf-rY-2Bg" id="bGo-tR-Vys"/>
                         <outlet property="loginButton" destination="9RS-4v-UI9" id="T2O-s8-c2s"/>
                         <outlet property="mainBackground" destination="8bC-Xf-vdC" id="GSL-Lj-snT"/>
                         <outlet property="nearestIntersectionLabel" destination="xuT-zs-0Lk" id="IiQ-k6-gak"/>
+                        <outlet property="otherInfoCheckbox" destination="OCW-NG-8sf" id="85z-dS-ZxN"/>
                         <outlet property="pollServerButton" destination="UBs-vp-fN6" id="avY-fK-gS7"/>
                         <outlet property="recordReportButton" destination="czJ-gp-zvg" id="h97-xT-Fxj"/>
                         <outlet property="recordSensorsButton" destination="UZI-Mk-KAm" id="9eO-8L-p0v"/>
@@ -204,6 +221,7 @@
                         <outlet property="startButton" destination="OEc-5G-z5I" id="QKa-OO-QzX"/>
                         <outlet property="textView" destination="WUZ-cH-SyE" id="Aq3-HA-UOU"/>
                         <outlet property="triggerRelayButton" destination="PRi-7S-eyl" id="ccM-yC-3i2"/>
+                        <outlet property="weatherCheckbox" destination="VBB-zN-OiF" id="9NV-Fe-d4N"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>

@@ -21,6 +21,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     
     let distanceThreshold = 200.0 // 1320.0 == quarter mile
     let formatter = DateFormatter()
+    let kNumReportSteps = 3
     let locationManager = CLLocationManager()
     let lwa = LoginWithAmazonProxy.sharedInstance
     let metersPerSecToMilesPerHour = 2.23694
@@ -44,6 +45,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     var lastLocation: CLLocation?
     var nearestIntersection: CLLocation?
     var particleToken: String?
+    var reportStep = 1
 
     var autoPollTimer: Timer?
     var locationTimer: Timer?
@@ -59,10 +61,12 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     
     @IBOutlet weak var alexaButton: UIButton!
     @IBOutlet weak var infoLabel: UILabel!
+    @IBOutlet weak var lightCheckbox: CheckBox!
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var loginButton: UIButton!
     @IBOutlet weak var mainBackground: UIView!
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
+    @IBOutlet weak var otherInfoCheckbox: CheckBox!
     @IBOutlet weak var pollServerButton: UIButton!
     @IBOutlet weak var recordReportButton: UIButton!
     @IBOutlet weak var recordSensorsButton: UIButton!
@@ -72,7 +76,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     @IBOutlet weak var startButton: UIButton!
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var triggerRelayButton: UIButton!
-
+    @IBOutlet weak var weatherCheckbox: CheckBox!
+    
     // MARK: UIViewController methods
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
@@ -690,7 +695,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         uploadRequest.body = url
         
         // upload the initial file
-        transferManager.upload(uploadRequest).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+        transferManager.upload(uploadRequest).continueWith(executor: AWSExecutor.mainThread(), block: {
+            (task:AWSTask<AnyObject>) -> Any? in
             
             if let error = task.error as NSError? {
                 if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
@@ -703,25 +709,32 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                 } else {
                     print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
                 }
+                self.updateTextView(text: "file upload failed")
                 return nil
             }
             
             _ = task.result
             print("Upload complete for: \(String(describing: uploadRequest.key))")
+            self.updateTextView(text: "file uploaded successfully")
             return nil
         })
         
         // now upload the companion text file
         do {
-            let locationString = "string of gps coords or whatever location info"
+            var locationString = "string of gps coords or whatever location info"
             let textUrl = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("location.txt")
+            
+            if lastLocation != nil {
+                locationString = String(describing: lastLocation!.coordinate)
+            }
             try locationString.write(to: textUrl!, atomically: true, encoding: String.Encoding.utf8)
             
             uploadRequest.bucket = "cycle-buddy-reports"
             uploadRequest.key = "\(dateString).txt"
             uploadRequest.body = textUrl!
             
-            transferManager.upload(uploadRequest).continueWith(executor: AWSExecutor.mainThread(), block: { (task:AWSTask<AnyObject>) -> Any? in
+            transferManager.upload(uploadRequest).continueWith(executor: AWSExecutor.mainThread(), block: {
+                (task:AWSTask<AnyObject>) -> Any? in
                 
                 if let error = task.error as NSError? {
                     if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
@@ -862,9 +875,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             audioRecorder.stop()
             
             do {
-                //                s3Upload(url: audioRecorder.url)
-                // TODO: upload to S3 if recording report, otherwise send to AVS
-                
                 try avsClient.postRecording(audioData: Data(contentsOf: audioRecorder.url))
             } catch let ex {
                 print("AVS Client threw an error: \(ex.localizedDescription)")
@@ -876,10 +886,60 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         if recordReportButton.title(for: .normal) == "PRESS TO RECORD REPORT" {
             recordReportButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
             recordReportButton.setTitle("PRESS STOP TO FINISH", for: .normal)
+
+            if (reportStep == 1) {
+                weatherCheckbox.isHidden = false
+                lightCheckbox.isHidden = false
+                otherInfoCheckbox.isHidden = false
+                prepareAudioSession()
+                audioRecorder.prepareToRecord()
+            }
+            audioRecorder.record()
         }
         else if recordReportButton.title(for: .normal) == "PRESS STOP TO FINISH" {
             recordReportButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
             recordReportButton.setTitle("PRESS TO RECORD REPORT", for: .normal)
+
+            if (reportStep < kNumReportSteps) {
+                // notify Alexa to move to the next step
+                let url = Bundle.main.url(forResource: "step", withExtension: "wav")
+                do {
+                    try avsClient.postRecording(audioData: Data(contentsOf: url!))
+                } catch let ex {
+                    print("AVS Client threw an error: \(ex.localizedDescription)")
+                }
+                
+                audioRecorder.pause()
+                switch reportStep {
+                case 1: weatherCheckbox.isChecked = true
+                    break
+                case 2: lightCheckbox.isChecked = true
+                    break
+                case 3: otherInfoCheckbox.isChecked = true
+                    break
+                default: break
+                }
+                reportStep += 1
+            }
+            else {
+                reportStep = 1
+                weatherCheckbox.isHidden = true
+                weatherCheckbox.isChecked = false
+                lightCheckbox.isHidden = true
+                lightCheckbox.isChecked = false
+                otherInfoCheckbox.isHidden = true
+                otherInfoCheckbox.isChecked = false
+                audioRecorder.stop()
+                s3Upload(url: audioRecorder.url)
+                
+                // notify Alexa that we are done
+                let url = Bundle.main.url(forResource: "finish", withExtension: "wav")
+                do {
+                    try avsClient.postRecording(audioData: Data(contentsOf: url!))
+                } catch let ex {
+                    print("AVS Client threw an error: \(ex.localizedDescription)")
+                }
+            }
         }
     }
     

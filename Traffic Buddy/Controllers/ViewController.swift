@@ -19,7 +19,6 @@ import UIKit
 
 class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayerDelegate, AVAudioRecorderDelegate, MFMailComposeViewControllerDelegate, AIAuthenticationDelegate {
     
-    let distanceThreshold = 200.0 // 1320.0 == quarter mile
     let formatter = DateFormatter()
     let kNumReportSteps = 3
     let locationManager = CLLocationManager()
@@ -35,6 +34,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
      * 4: trip on, within 50 ft, triggering relay
      */
     var appState = 1
+    var autoPollDistance = 200.0
+    var autoTriggerDistance = 100.0
     var dist = 9999999.9 // default to far away from particle box
     var electron : ParticleDevice?
     var heading: CLHeading?
@@ -44,9 +45,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     var isPaused = false
     var isRecordingReport = false
     var lastLocation: CLLocation?
+    var lastSpeed = 0.0
     var nearestIntersection: CLLocation?
     var particleToken: String?
     var reportStep = 1
+    var useSpeedTrigger = false
 
     var autoPollTimer: Timer?
     var locationTimer: Timer?
@@ -129,14 +132,18 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                                                  userInfo: nil,
                                                  repeats: true)
         }
-        
+
         if ParticleCloud.sharedInstance().injectSessionAccessToken(particleToken!) {
             infoLabel.text = "session active"
             getParticleDevices()
         } else {
             infoLabel.text = "bad token"
         }
-        
+
+        if let speedTrigger = realm.getObjects(type: ConfigItem.self)?.filter("key = 'UseSpeedTrigger'").first as? ConfigItem {
+            useSpeedTrigger = Bool(speedTrigger.value)!
+        }
+
         updateTextView(text: "application loaded successfully")
     }
     
@@ -313,6 +320,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         }
         
         lastLocation = myLocation
+        lastSpeed = instantSpeed
         locationManager.stopUpdatingLocation()
     }
     
@@ -446,7 +454,22 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                     }
                 }
             }
-            
+            if let distanceThreshold = realm.getObjects(type: ConfigItem.self)?.filter("key = 'AutoPollDistance'").first as? ConfigItem {
+                autoPollDistance = Double(distanceThreshold.value)!
+            }
+
+            // calculate the auto trigger distance based on speed
+            if useSpeedTrigger {
+                if let triggerThreshold = realm.getObjects(type: ConfigItem.self)?.filter("key = 'DistanceThresholdSeconds'").first as? ConfigItem {
+                    autoTriggerDistance = Double(triggerThreshold.value)! * lastSpeed * 3.28 // speed is measured in meters per second
+                }
+            }
+            else {
+                if let triggerThreshold = realm.getObjects(type: ConfigItem.self)?.filter("key = 'DistanceThresholdFeet'").first as? ConfigItem {
+                    autoTriggerDistance = Double(triggerThreshold.value)!
+                }
+            }
+
             let currentLocation = locationManager.location!
             let nearestIntersection = getClosestIntersection(intersections: intersections, closestToLocation: currentLocation)
             
@@ -454,7 +477,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                 let intersectionLocation = nearestIntersection!.getLocation()
                 
                 dist = metersToFeet(from: intersectionLocation.distance(from: currentLocation))
-                if dist < distanceThreshold && isOnTrip {
+                if dist < autoPollDistance && isOnTrip {
                     appState = 2
                     
                     // auto-poll server within distance threshold
@@ -471,7 +494,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                     }
                     
                     // if the user was previously near an intersection, vibrate to notify
-                    if dist > 50.0 && isNearIntersection {
+                    if dist > 200 && isNearIntersection {
                         isNearIntersection = false
                         appState = 3
                         
@@ -479,7 +502,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                     }
                     
                     // if the user is not already near an intersection, vibrate to notify
-                    if dist < 50.0 && !isNearIntersection {
+                    if dist < autoTriggerDistance && !isNearIntersection {
                         var headingThreshold = 10.0
                         if let dbValue = realm.getObjects(type: ConfigItem.self)?.filter("key = 'HeadingThreshold'").first as? ConfigItem {
                             if let val = Double(dbValue.value) {
@@ -963,11 +986,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     
     @IBAction func recordSensorsButtonClick(_ sender: Any) {
         if recordSensorsButton.title(for: .normal) == "record" {
-            MotionHelper.startMotionUpdates(motionManager: self.motionManager)
+            MotionHelper.isRecordingSensors = true
             recordSensorsButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
             recordSensorsButton.setTitle("stop", for: .normal)
         } else if recordSensorsButton.title(for: .normal) == "stop" {
-            MotionHelper.stopMotionUpdates(motionManager: self.motionManager)
+            MotionHelper.isRecordingSensors = false
             recordSensorsButton.setImage(UIImage(named: "email-30px.png"), for: .normal)
             recordSensorsButton.setTitle("send", for: .normal)
         } else {
@@ -995,7 +1018,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             appState = 2
             isOnTrip = true
             updateTextView(text: "starting bicycle trip")
-            relayStateView.backgroundColor = UIColor.red
+//            relayStateView.backgroundColor = UIColor.red
+            MotionHelper.startMotionUpdates(motionManager: self.motionManager)
         }
         else if startButton.titleLabel?.text == "Stop Trip" {
             startButton.setTitle("Start Trip", for: .normal)
@@ -1006,7 +1030,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             appState = 1
             isOnTrip = false
             updateTextView(text: "stopping bicycle trip")
-            relayStateView.backgroundColor = UIColor.lightGray
+//            relayStateView.backgroundColor = UIColor.lightGray
+            MotionHelper.stopMotionUpdates(motionManager: self.motionManager)
         }
     }
 }

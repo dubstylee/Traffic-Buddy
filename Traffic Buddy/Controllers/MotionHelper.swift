@@ -16,6 +16,7 @@ class MotionHelper {
     static var accelerometerReadings = [String]()
     static var accidentDetected = false
     static var gyroscopeReadings = [String]()
+    static var isRecordingSensors = false
     static var motionReadings = [String]()
     
     /**
@@ -90,11 +91,13 @@ class MotionHelper {
         let acc_total = pow(acc, 0.5)
         let acc_vertical = abs(acc_x * sin(roll) + acc_y * sin(pitch) - acc_z * cos(pitch) * cos(roll))
         
-        var text = "\(formatter.string(from: NSDate() as Date)),A_t,\(acc_total)"
-        readings.append(text)
-        
-        text = "\(formatter.string(from: NSDate() as Date)),A_v,\(acc_vertical)"
-        readings.append(text)
+        if (isRecordingSensors) {
+            var text = "\(formatter.string(from: NSDate() as Date)),A_t,\(acc_total)"
+            readings.append(text)
+            
+            text = "\(formatter.string(from: NSDate() as Date)),A_v,\(acc_vertical)"
+            readings.append(text)
+        }
         
         if !accidentDetected {
             if let thresh = RealmHelper.sharedInstance.getObjects(type: ConfigItem.self)?.filter("key == 'SensorChangeThreshold'") {

@@ -7,7 +7,6 @@
 //
 
 import AVFoundation
-import AWSS3
 import CoreLocation
 import CoreMotion
 import LoginWithAmazon
@@ -702,91 +701,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     }
     
     /**
-     Upload a file to Amazon S3 storage.
-     
-     - parameter url: The `URL` of the file to upload.
-     */
-    internal func s3Upload(url: URL) {
-        let credentialsProvider = AWSStaticCredentialsProvider(accessKey: Settings.S3.S3_ACCESS_KEY, secretKey: Settings.S3.S3_SECRET_KEY)
-        let configuration = AWSServiceConfiguration(region:.USEast1, credentialsProvider:credentialsProvider)
-        
-        formatter.dateFormat = "yyyyMMdd HHmmss.SSSS"
-        let dateString = formatter.string(from: NSDate() as Date)
-        
-        AWSServiceManager.default().defaultServiceConfiguration = configuration
-        let transferManager = AWSS3TransferManager.default()
-        let uploadRequest = AWSS3TransferManagerUploadRequest()!
-        
-        uploadRequest.bucket = "cycle-buddy-reports"
-        uploadRequest.key = "\(dateString).wav"
-        uploadRequest.body = url
-        
-        // upload the initial file
-        transferManager.upload(uploadRequest).continueWith(executor: AWSExecutor.mainThread(), block: {
-            (task:AWSTask<AnyObject>) -> Any? in
-            
-            if let error = task.error as NSError? {
-                if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
-                    switch code {
-                    case .cancelled, .paused:
-                        break
-                    default:
-                        print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
-                    }
-                } else {
-                    print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
-                }
-                self.updateTextView(text: "file upload failed")
-                return nil
-            }
-            
-            _ = task.result
-            print("Upload complete for: \(String(describing: uploadRequest.key))")
-            self.updateTextView(text: "file uploaded successfully")
-            return nil
-        })
-        
-        // now upload the companion text file
-        do {
-            var locationString = "string of gps coords or whatever location info"
-            let textUrl = NSURL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("location.txt")
-            
-            if lastLocation != nil {
-                locationString = String(describing: lastLocation!.coordinate)
-            }
-            try locationString.write(to: textUrl!, atomically: true, encoding: String.Encoding.utf8)
-            
-            uploadRequest.bucket = "cycle-buddy-reports"
-            uploadRequest.key = "\(dateString).txt"
-            uploadRequest.body = textUrl!
-            
-            transferManager.upload(uploadRequest).continueWith(executor: AWSExecutor.mainThread(), block: {
-                (task:AWSTask<AnyObject>) -> Any? in
-                
-                if let error = task.error as NSError? {
-                    if error.domain == AWSS3TransferManagerErrorDomain, let code = AWSS3TransferManagerErrorType(rawValue: error.code) {
-                        switch code {
-                        case .cancelled, .paused:
-                            break
-                        default:
-                            print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
-                        }
-                    } else {
-                        print("Error uploading: \(String(describing: uploadRequest.key)) Error: \(error)")
-                    }
-                    return nil
-                }
-                
-                _ = task.result
-                print("Upload complete for: \(String(describing: uploadRequest.key))")
-                return nil
-            })
-        } catch let ex {
-            print("Error writing location information: \(ex.localizedDescription)")
-        }
-    }
-    
-    /**
      Start recording the next part of the accident report.
     */
     func startRecordingNextStep() {
@@ -922,68 +836,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     }
 
     @IBAction func recordReportButtonClick(_ sender: Any) {
-//        if recordReportButton.title(for: .normal) == "PRESS TO RECORD REPORT" {
-//            recordReportButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
-//            recordReportButton.setTitle("PRESS STOP TO FINISH", for: .normal)
-//
-//            if (reportStep == 1) {
-//                weatherCheckbox.isHidden = false
-//                lightCheckbox.isHidden = false
-//                otherInfoCheckbox.isHidden = false
-//                prepareAudioSession()
-//                audioRecorder.prepareToRecord()
-//            }
-//            audioRecorder.record()
-//            isRecordingReport = true
-//        }
-//        else if recordReportButton.title(for: .normal) == "PRESS STOP TO FINISH" {
-//            recordReportButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
-//            recordReportButton.setTitle("PRESS TO RECORD REPORT", for: .normal)
-//
-//            if (reportStep < kNumReportSteps) {
-//                // notify Alexa to move to the next step
-//                let url = Bundle.main.url(forResource: "step", withExtension: "wav")
-//                do {
-//                    try avsClient.postRecording(audioData: Data(contentsOf: url!))
-//                } catch let ex {
-//                    print("AVS Client threw an error: \(ex.localizedDescription)")
-//                }
-//
-//                audioRecorder.pause()
-//                switch reportStep {
-//                case 1: weatherCheckbox.isChecked = true
-//                    break
-//                case 2: lightCheckbox.isChecked = true
-//                    break
-//                case 3: otherInfoCheckbox.isChecked = true
-//                    break
-//                default: break
-//                }
-//                reportStep += 1
-//            }
-//            else {
-//                reportStep = 1
-//                isRecordingReport = false
-//                weatherCheckbox.isHidden = true
-//                weatherCheckbox.isChecked = false
-//                lightCheckbox.isHidden = true
-//                lightCheckbox.isChecked = false
-//                otherInfoCheckbox.isHidden = true
-//                otherInfoCheckbox.isChecked = false
-//                audioRecorder.stop()
-//                s3Upload(url: audioRecorder.url)
-//
-//                // notify Alexa that we are done
-//                let url = Bundle.main.url(forResource: "finish", withExtension: "wav")
-//                do {
-//                    try avsClient.postRecording(audioData: Data(contentsOf: url!))
-//                } catch let ex {
-//                    print("AVS Client threw an error: \(ex.localizedDescription)")
-//                }
-//            }
-//        }
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        let controller = storyboard.instantiateViewController(withIdentifier: "ReportView")
+        let controller = storyboard.instantiateViewController(withIdentifier: "ReportView") as! ReportViewController
+        controller.lastLocation = lastLocation
         self.navigationController?.pushViewController(controller, animated: true)
     }
     

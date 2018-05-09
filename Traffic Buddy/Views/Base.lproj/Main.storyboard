@@ -80,7 +80,7 @@
                                 </connections>
                             </button>
                             <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" editable="NO" usesAttributedText="YES" selectable="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WUZ-cH-SyE">
-                                <rect key="frame" x="16" y="212" width="343" height="249"/>
+                                <rect key="frame" x="16" y="212" width="343" height="300"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES" heightSizable="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <attributedString key="attributedText">
@@ -147,7 +147,7 @@
                                 </connections>
                             </button>
                             <button hidden="YES" opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="wordWrap" translatesAutoresizingMaskIntoConstraints="NO" id="Tpq-kg-Aoq">
-                                <rect key="frame" x="16" y="526" width="171" height="76"/>
+                                <rect key="frame" x="16" y="526" width="214" height="76"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxX="YES" flexibleMinY="YES"/>
                                 <color key="backgroundColor" red="0.15686274510000001" green="0.46180555559999997" blue="0.75294117650000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <state key="normal" title="HOLD TO SPEAK TO ALEXA" image="mic-30px">
@@ -166,11 +166,11 @@
                                 </connections>
                             </button>
                             <button hidden="YES" opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="wordWrap" translatesAutoresizingMaskIntoConstraints="NO" id="czJ-gp-zvg">
-                                <rect key="frame" x="195" y="526" width="163" height="76"/>
+                                <rect key="frame" x="238" y="526" width="120" height="76"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMinX="YES" widthSizable="YES" flexibleMinY="YES"/>
                                 <color key="backgroundColor" red="0.15686274510000001" green="0.46180555559999997" blue="0.75294117650000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <color key="tintColor" red="1" green="0.14913141730000001" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <state key="normal" title="PRESS TO RECORD REPORT" image="record-30px">
+                                <color key="tintColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <state key="normal" title="REPORT INCIDENT">
                                     <color key="titleColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 </state>
                                 <userDefinedRuntimeAttributes>
@@ -349,11 +349,17 @@
                         <viewLayoutGuide key="safeArea" id="mDT-iy-W6u"/>
                     </view>
                     <connections>
+                        <outlet property="additionalInfoButton" destination="OW3-OE-2Yt" id="Ju2-ja-keC"/>
                         <outlet property="additionalInfoCheckbox" destination="gDo-Gn-iKY" id="bfZ-30-fb8"/>
+                        <outlet property="lightButton" destination="SH8-5e-ejP" id="zR7-IS-MPK"/>
                         <outlet property="lightCheckbox" destination="EHO-XK-bjO" id="SaD-Eg-BQf"/>
+                        <outlet property="othersActivityButton" destination="DZR-RG-fhL" id="bnp-vE-pnC"/>
                         <outlet property="othersActivityCheckbox" destination="jy0-uX-uVL" id="NOP-KY-iFx"/>
+                        <outlet property="roadButton" destination="H7d-9Q-r5J" id="Xb4-FR-EQz"/>
                         <outlet property="roadCheckbox" destination="85q-nF-Dpe" id="YEK-3p-01E"/>
+                        <outlet property="weatherButton" destination="qXk-2O-VA9" id="DXg-NS-atb"/>
                         <outlet property="weatherCheckbox" destination="9wf-zi-ZcF" id="Sqy-sn-zVe"/>
+                        <outlet property="yourActivityButton" destination="lEk-vV-vFj" id="uGm-to-gmf"/>
                         <outlet property="yourActivityCheckbox" destination="VhJ-Bp-UR9" id="7Rn-gj-J2R"/>
                     </connections>
                 </viewController>

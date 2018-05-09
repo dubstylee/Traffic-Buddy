@@ -28,6 +28,7 @@
 		D361D0E11F81EB2E0060F25A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D361D0DF1F81EB2E0060F25A /* LaunchScreen.storyboard */; };
 		D361D0EA1F81EC120060F25A /* Intersection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0E91F81EC120060F25A /* Intersection.swift */; };
 		D3AE0BA01FB95F1D00DCD5BA /* particle.conf in Resources */ = {isa = PBXBuildFile; fileRef = D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */; };
+		D3CA55C620A29974006A11CE /* ReportViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CA55C520A29974006A11CE /* ReportViewController.swift */; };
 		D3E5C7C2209FCFF20009BFA1 /* step.wav in Resources */ = {isa = PBXBuildFile; fileRef = D3E5C7C1209FCFF20009BFA1 /* step.wav */; };
 		D3E5C7C4209FFE370009BFA1 /* Checkbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E5C7C3209FFE370009BFA1 /* Checkbox.swift */; };
 /* End PBXBuildFile section */
@@ -58,6 +59,7 @@
 		D361D0E21F81EB2E0060F25A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D361D0E91F81EC120060F25A /* Intersection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intersection.swift; sourceTree = "<group>"; };
 		D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = particle.conf; path = "Traffic Buddy/particle.conf"; sourceTree = "<group>"; };
+		D3CA55C520A29974006A11CE /* ReportViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportViewController.swift; sourceTree = "<group>"; };
 		D3E5C7C1209FCFF20009BFA1 /* step.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = step.wav; sourceTree = "<group>"; };
 		D3E5C7C3209FFE370009BFA1 /* Checkbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Checkbox.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -162,6 +164,7 @@
 				D34BAF0F20962AA4001B6E1A /* RealmHelper.swift */,
 				D34BAF0D20958AF7001B6E1A /* SettingsViewController.swift */,
 				D361D0D81F81EB2E0060F25A /* ViewController.swift */,
+				D3CA55C520A29974006A11CE /* ReportViewController.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -315,6 +318,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D361D0EA1F81EC120060F25A /* Intersection.swift in Sources */,
+				D3CA55C620A29974006A11CE /* ReportViewController.swift in Sources */,
 				85C7AE2D20462DB900B65F16 /* LoginWithAmazonProxy.swift in Sources */,
 				D34BAF0C20951B03001B6E1A /* ConfigItem.swift in Sources */,
 				853211FD2061CFA7000C237F /* MotionHelper.swift in Sources */,

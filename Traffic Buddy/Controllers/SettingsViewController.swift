@@ -43,6 +43,12 @@ class SettingsViewController: UITableViewController {
                     else if config.key == "HeadingThreshold" {
                         // not configurable from within the app
                     }
+                    else if config.key == "AutoPollDistance" {
+                        // not configurable from within the app
+                    }
+                    else if config.key == "UseSpeedTrigger" {
+                        // not configurable from within the app
+                    }
                     else {
                         print("unknown key: '\(config.key)'")
                     }

@@ -65,12 +65,12 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     
     @IBOutlet weak var alexaButton: UIButton!
     @IBOutlet weak var infoLabel: UILabel!
-    @IBOutlet weak var lightCheckbox: CheckBox!
+//    @IBOutlet weak var lightCheckbox: CheckBox!
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var loginButton: UIButton!
     @IBOutlet weak var mainBackground: UIView!
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
-    @IBOutlet weak var otherInfoCheckbox: CheckBox!
+//    @IBOutlet weak var otherInfoCheckbox: CheckBox!
     @IBOutlet weak var pollServerButton: UIButton!
     @IBOutlet weak var recordReportButton: UIButton!
     @IBOutlet weak var recordSensorsButton: UIButton!
@@ -80,7 +80,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     @IBOutlet weak var startButton: UIButton!
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var triggerRelayButton: UIButton!
-    @IBOutlet weak var weatherCheckbox: CheckBox!
+//    @IBOutlet weak var weatherCheckbox: CheckBox!
     
     // MARK: UIViewController methods
     override func didReceiveMemoryWarning() {
@@ -922,66 +922,69 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     }
 
     @IBAction func recordReportButtonClick(_ sender: Any) {
-        if recordReportButton.title(for: .normal) == "PRESS TO RECORD REPORT" {
-            recordReportButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
-            recordReportButton.setTitle("PRESS STOP TO FINISH", for: .normal)
-
-            if (reportStep == 1) {
-                weatherCheckbox.isHidden = false
-                lightCheckbox.isHidden = false
-                otherInfoCheckbox.isHidden = false
-                prepareAudioSession()
-                audioRecorder.prepareToRecord()
-            }
-            audioRecorder.record()
-            isRecordingReport = true
-        }
-        else if recordReportButton.title(for: .normal) == "PRESS STOP TO FINISH" {
-            recordReportButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
-            recordReportButton.setTitle("PRESS TO RECORD REPORT", for: .normal)
-
-            if (reportStep < kNumReportSteps) {
-                // notify Alexa to move to the next step
-                let url = Bundle.main.url(forResource: "step", withExtension: "wav")
-                do {
-                    try avsClient.postRecording(audioData: Data(contentsOf: url!))
-                } catch let ex {
-                    print("AVS Client threw an error: \(ex.localizedDescription)")
-                }
-                
-                audioRecorder.pause()
-                switch reportStep {
-                case 1: weatherCheckbox.isChecked = true
-                    break
-                case 2: lightCheckbox.isChecked = true
-                    break
-                case 3: otherInfoCheckbox.isChecked = true
-                    break
-                default: break
-                }
-                reportStep += 1
-            }
-            else {
-                reportStep = 1
-                isRecordingReport = false
-                weatherCheckbox.isHidden = true
-                weatherCheckbox.isChecked = false
-                lightCheckbox.isHidden = true
-                lightCheckbox.isChecked = false
-                otherInfoCheckbox.isHidden = true
-                otherInfoCheckbox.isChecked = false
-                audioRecorder.stop()
-                s3Upload(url: audioRecorder.url)
-                
-                // notify Alexa that we are done
-                let url = Bundle.main.url(forResource: "finish", withExtension: "wav")
-                do {
-                    try avsClient.postRecording(audioData: Data(contentsOf: url!))
-                } catch let ex {
-                    print("AVS Client threw an error: \(ex.localizedDescription)")
-                }
-            }
-        }
+//        if recordReportButton.title(for: .normal) == "PRESS TO RECORD REPORT" {
+//            recordReportButton.setImage(UIImage(named: "stop-30px.png"), for: .normal)
+//            recordReportButton.setTitle("PRESS STOP TO FINISH", for: .normal)
+//
+//            if (reportStep == 1) {
+//                weatherCheckbox.isHidden = false
+//                lightCheckbox.isHidden = false
+//                otherInfoCheckbox.isHidden = false
+//                prepareAudioSession()
+//                audioRecorder.prepareToRecord()
+//            }
+//            audioRecorder.record()
+//            isRecordingReport = true
+//        }
+//        else if recordReportButton.title(for: .normal) == "PRESS STOP TO FINISH" {
+//            recordReportButton.setImage(UIImage(named: "record-30px.png"), for: .normal)
+//            recordReportButton.setTitle("PRESS TO RECORD REPORT", for: .normal)
+//
+//            if (reportStep < kNumReportSteps) {
+//                // notify Alexa to move to the next step
+//                let url = Bundle.main.url(forResource: "step", withExtension: "wav")
+//                do {
+//                    try avsClient.postRecording(audioData: Data(contentsOf: url!))
+//                } catch let ex {
+//                    print("AVS Client threw an error: \(ex.localizedDescription)")
+//                }
+//
+//                audioRecorder.pause()
+//                switch reportStep {
+//                case 1: weatherCheckbox.isChecked = true
+//                    break
+//                case 2: lightCheckbox.isChecked = true
+//                    break
+//                case 3: otherInfoCheckbox.isChecked = true
+//                    break
+//                default: break
+//                }
+//                reportStep += 1
+//            }
+//            else {
+//                reportStep = 1
+//                isRecordingReport = false
+//                weatherCheckbox.isHidden = true
+//                weatherCheckbox.isChecked = false
+//                lightCheckbox.isHidden = true
+//                lightCheckbox.isChecked = false
+//                otherInfoCheckbox.isHidden = true
+//                otherInfoCheckbox.isChecked = false
+//                audioRecorder.stop()
+//                s3Upload(url: audioRecorder.url)
+//
+//                // notify Alexa that we are done
+//                let url = Bundle.main.url(forResource: "finish", withExtension: "wav")
+//                do {
+//                    try avsClient.postRecording(audioData: Data(contentsOf: url!))
+//                } catch let ex {
+//                    print("AVS Client threw an error: \(ex.localizedDescription)")
+//                }
+//            }
+//        }
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let controller = storyboard.instantiateViewController(withIdentifier: "ReportView")
+        self.navigationController?.pushViewController(controller, animated: true)
     }
     
     @IBAction func recordSensorsButtonClick(_ sender: Any) {

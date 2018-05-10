@@ -50,14 +50,6 @@
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="2" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="zBf-rY-2Bg">
-                                <rect key="frame" x="17" y="281" width="341" height="28"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <color key="backgroundColor" red="1" green="1" blue="1" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="13"/>
-                                <nil key="textColor"/>
-                                <nil key="highlightedColor"/>
-                            </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Speed:" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="4" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="inz-n8-6qz">
                                 <rect key="frame" x="16" y="610" width="343" height="28"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
@@ -191,7 +183,6 @@
                     <connections>
                         <outlet property="alexaButton" destination="Tpq-kg-Aoq" id="GyN-tn-6Es"/>
                         <outlet property="infoLabel" destination="Crt-HE-RO6" id="2xi-72-kSz"/>
-                        <outlet property="locationLabel" destination="zBf-rY-2Bg" id="bGo-tR-Vys"/>
                         <outlet property="loginButton" destination="9RS-4v-UI9" id="T2O-s8-c2s"/>
                         <outlet property="mainBackground" destination="8bC-Xf-vdC" id="GSL-Lj-snT"/>
                         <outlet property="nearestIntersectionLabel" destination="xuT-zs-0Lk" id="IiQ-k6-gak"/>

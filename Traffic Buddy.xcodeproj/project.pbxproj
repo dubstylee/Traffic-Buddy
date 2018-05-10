@@ -29,6 +29,7 @@
 		D361D0EA1F81EC120060F25A /* Intersection.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0E91F81EC120060F25A /* Intersection.swift */; };
 		D3AE0BA01FB95F1D00DCD5BA /* particle.conf in Resources */ = {isa = PBXBuildFile; fileRef = D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */; };
 		D3CA55C620A29974006A11CE /* ReportViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CA55C520A29974006A11CE /* ReportViewController.swift */; };
+		D3CA55C820A3F46A006A11CE /* help.wav in Resources */ = {isa = PBXBuildFile; fileRef = D3CA55C720A3F46A006A11CE /* help.wav */; };
 		D3E5C7C2209FCFF20009BFA1 /* step.wav in Resources */ = {isa = PBXBuildFile; fileRef = D3E5C7C1209FCFF20009BFA1 /* step.wav */; };
 		D3E5C7C4209FFE370009BFA1 /* Checkbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E5C7C3209FFE370009BFA1 /* Checkbox.swift */; };
 /* End PBXBuildFile section */
@@ -60,6 +61,7 @@
 		D361D0E91F81EC120060F25A /* Intersection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intersection.swift; sourceTree = "<group>"; };
 		D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = particle.conf; path = "Traffic Buddy/particle.conf"; sourceTree = "<group>"; };
 		D3CA55C520A29974006A11CE /* ReportViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportViewController.swift; sourceTree = "<group>"; };
+		D3CA55C720A3F46A006A11CE /* help.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = help.wav; sourceTree = "<group>"; };
 		D3E5C7C1209FCFF20009BFA1 /* step.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = step.wav; sourceTree = "<group>"; };
 		D3E5C7C3209FFE370009BFA1 /* Checkbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Checkbox.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -103,6 +105,7 @@
 			isa = PBXGroup;
 			children = (
 				D35DD259208D635500868F8D /* finish.wav */,
+				D3CA55C720A3F46A006A11CE /* help.wav */,
 				D3AE0B9F1FB95F1D00DCD5BA /* particle.conf */,
 				D3E5C7C1209FCFF20009BFA1 /* step.wav */,
 				D349B36E205DCD4F007442F6 /* wake.wav */,
@@ -241,6 +244,7 @@
 				D349B36F205DCD50007442F6 /* wake.wav in Resources */,
 				D361D0E11F81EB2E0060F25A /* LaunchScreen.storyboard in Resources */,
 				D3AE0BA01FB95F1D00DCD5BA /* particle.conf in Resources */,
+				D3CA55C820A3F46A006A11CE /* help.wav in Resources */,
 				D361D0DE1F81EB2E0060F25A /* Assets.xcassets in Resources */,
 				D361D0DC1F81EB2E0060F25A /* Main.storyboard in Resources */,
 			);

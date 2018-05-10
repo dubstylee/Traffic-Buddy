@@ -37,7 +37,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     var autoTriggerDistance = 100.0
     var dist = 9999999.9 // default to far away from particle box
     var electron : ParticleDevice?
-    var heading: CLHeading?
+    var heading: CLLocationDirection?
     var isLoggedIn = false
     var isNearIntersection = false
     var isOnTrip = false
@@ -64,12 +64,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     
     @IBOutlet weak var alexaButton: UIButton!
     @IBOutlet weak var infoLabel: UILabel!
-//    @IBOutlet weak var lightCheckbox: CheckBox!
-    @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var loginButton: UIButton!
     @IBOutlet weak var mainBackground: UIView!
     @IBOutlet weak var nearestIntersectionLabel: UILabel!
-//    @IBOutlet weak var otherInfoCheckbox: CheckBox!
     @IBOutlet weak var pollServerButton: UIButton!
     @IBOutlet weak var recordReportButton: UIButton!
     @IBOutlet weak var recordSensorsButton: UIButton!
@@ -79,7 +76,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
     @IBOutlet weak var startButton: UIButton!
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var triggerRelayButton: UIButton!
-//    @IBOutlet weak var weatherCheckbox: CheckBox!
     
     // MARK: UIViewController methods
     override func didReceiveMemoryWarning() {
@@ -122,10 +118,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             locationManager.desiredAccuracy = kCLLocationAccuracyBest
             locationManager.distanceFilter = 0.5
             locationManager.pausesLocationUpdatesAutomatically = true
-            locationManager.headingFilter = 5.0
+            locationManager.headingFilter = 1.0
             locationManager.startUpdatingHeading()
             
-            locationTimer = Timer.scheduledTimer(timeInterval: 1,
+            locationTimer = Timer.scheduledTimer(timeInterval: 0.5,
                                                  target: self,
                                                  selector: #selector(self.updateLocation),
                                                  userInfo: nil,
@@ -285,7 +281,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
      - parameter newHeading: The new `CLHeading` after the change.
      */
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
-        self.heading = newHeading
+        // only use the new info if it is valid
+        if newHeading.headingAccuracy > 0
+        {
+            self.heading = (newHeading.trueHeading > 0 ? newHeading.trueHeading : newHeading.magneticHeading)
+        }
     }
     
     /**
@@ -296,16 +296,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
      */
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         let myLocation = locations.first!
-        let locValue = myLocation.coordinate
         var instantSpeed = myLocation.speed
         
-        let latString = locValue.latitude > 0 ? "\(locValue.latitude)° N" : "\(-locValue.latitude)° S"
-        let longString = locValue.longitude > 0 ? "\(locValue.longitude)° E" : "\(-locValue.longitude)° W"
-        
-        locationLabel.text = "\(latString) \(longString)"
-        
         instantSpeed = max(instantSpeed, 0.0)
-        speedLabel.text = String(format: "Current Speed: %.1f mph", (instantSpeed * metersPerSecToMilesPerHour))
         
         if !isPaused {
             displayClosestIntersection()
@@ -321,6 +314,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         lastLocation = myLocation
         lastSpeed = instantSpeed
         locationManager.stopUpdatingLocation()
+        
+        speedLabel.text = String(format: "Speed: %.1f mph, Heading: %.1f°", (instantSpeed * metersPerSecToMilesPerHour), ((heading != nil) ? heading! : 0.0))
     }
     
     // MARK: MFMailComposeViewControllerDelegate functions
@@ -476,54 +471,63 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                 let intersectionLocation = nearestIntersection!.getLocation()
                 
                 dist = metersToFeet(from: intersectionLocation.distance(from: currentLocation))
-                if dist < autoPollDistance && isOnTrip {
-                    appState = 2
-                    
-                    // auto-poll server within distance threshold
-                    if electron != nil && !isPaused {
-                        isPaused = true
-                        readLoopState(silent: true)
-                        
-                        // only auto-poll at most every 3 seconds
-                        autoPollTimer = Timer.scheduledTimer(timeInterval: 3,
-                                                             target: self,
-                                                             selector: #selector(self.updateAutoPollPause),
-                                                             userInfo: nil,
-                                                             repeats: false)
-                    }
-                    
-                    // if the user was previously near an intersection, vibrate to notify
-                    if dist > 200 && isNearIntersection {
-                        isNearIntersection = false
+                if isOnTrip {
+                    if dist < autoPollDistance {
                         appState = 3
                         
-                        AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
-                    }
-                    
-                    // if the user is not already near an intersection, vibrate to notify
-                    if dist < autoTriggerDistance && !isNearIntersection {
-                        var headingThreshold = 10.0
-                        if let dbValue = realm.getObjects(type: ConfigItem.self)?.filter("key = 'HeadingThreshold'").first as? ConfigItem {
-                            if let val = Double(dbValue.value) {
-                                headingThreshold = val
-                            }
+                        // auto-poll server within distance threshold
+                        if electron != nil && !isPaused {
+                            isPaused = true
+                            readLoopState(silent: true)
+                            
+                            // only auto-poll at most every 2 seconds
+                            autoPollTimer = Timer.scheduledTimer(timeInterval: 2,
+                                                                 target: self,
+                                                                 selector: #selector(self.updateAutoPollPause),
+                                                                 userInfo: nil,
+                                                                 repeats: false)
                         }
                         
-                        // check if we are heading within an acceptable degree of the intersection's headings
-                        for h in nearestIntersection!.headings {
-                            if abs((heading?.trueHeading)! - h) < headingThreshold {
-                                isNearIntersection = true
-                                appState = 4
+                        if dist < autoTriggerDistance {
+                            appState = 4
+
+                            if !isNearIntersection {
+                                // if the user is not already near an intersection, vibrate to notify
+                                var headingThreshold = 10.0
+                                if let dbValue = realm.getObjects(type: ConfigItem.self)?.filter("key = 'HeadingThreshold'").first as? ConfigItem {
+                                    if let val = Double(dbValue.value) {
+                                        headingThreshold = val
+                                    }
+                                }
                                 
-                                triggerRelay(relayNumber: "1", manual: false)
-                                AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
-                                break
+                                // check if we are heading within an acceptable degree of the intersection's headings
+                                for h in nearestIntersection!.headings {
+                                    let diff = abs(heading! - h)
+                                    if diff < headingThreshold ||
+                                        360.0 - diff < headingThreshold {
+                                        isNearIntersection = true
+                                        
+                                        triggerRelay(relayNumber: "1", manual: false)
+                                        AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
+                                        break
+                                    }
+                                }
                             }
                         }
+                        else if dist > 200 && isNearIntersection {
+                            // if the user was previously near an intersection, vibrate to notify
+                            isNearIntersection = false
+                            appState = 3
+                            
+                            AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
+                        }
+                    }
+                    else {
+                        appState = 2
                     }
                 } else {
-                    // either we are not on a trip, or not within distance threshold
-                    // self.relayStateView.backgroundColor = UIColor.lightGray
+                    // not on a trip
+                    appState = 1
                 }
                 
                 nearestIntersectionLabel.text = String(format: "%.0f feet from \(nearestIntersection!.title)", dist)
@@ -876,19 +880,16 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             appState = 2
             isOnTrip = true
             updateTextView(text: "starting bicycle trip")
-//            relayStateView.backgroundColor = UIColor.red
             MotionHelper.startMotionUpdates(motionManager: self.motionManager)
         }
         else if startButton.titleLabel?.text == "Stop Trip" {
             startButton.setTitle("Start Trip", for: .normal)
             autoPollTimer?.invalidate()
-            locationTimer?.invalidate()
             pollServerTimer?.invalidate()
             isPaused = false
             appState = 1
             isOnTrip = false
             updateTextView(text: "stopping bicycle trip")
-//            relayStateView.backgroundColor = UIColor.lightGray
             MotionHelper.stopMotionUpdates(motionManager: self.motionManager)
         }
     }

@@ -12,9 +12,10 @@ import CoreLocation
 import Foundation
 import UIKit
 
-class ReportViewController: UIViewController {
+class ReportViewController: UIViewController, AVAudioPlayerDelegate {
     let formatter = DateFormatter()
     var lastLocation: CLLocation?
+    var reported = false
     
     @IBOutlet weak var additionalInfoButton: UIButton!
     @IBOutlet weak var additionalInfoCheckbox: CheckBox!
@@ -39,9 +40,140 @@ class ReportViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // setup Alexa Voice Services client
+        avsClient.pingHandler = self.pingHandler
+        avsClient.syncHandler = self.syncHandler
+        avsClient.directiveHandler = self.directiveHandler
+        avsClient.downchannelHandler = self.downchannelHandler
 
         prepareAudioSession()
         audioRecorder.prepareToRecord()
+    }
+    
+    
+    // MARK: AVAudioPlayerDelegate methods
+    /**
+     An error occurred during audio decoding.
+     
+     - parameter player: The `AVAudioPlayer` instance.
+     - parameter error: The `Error` that occurred.
+     */
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        print("Audio player has an error: \(String(describing: error?.localizedDescription))")
+    }
+    
+    /**
+     The audio player finished playing.
+     
+     - parameter player: The `AVAudioPlayer` instance.
+     - parameter flag: Whether or not the audio player finished successfully.
+     */
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        print("Audio player is finished playing")
+        
+        avsClient.sendEvent(namespace: "SpeechSynthesizer", name: "SpeechFinished", token: avsToken!)
+    }
+    
+    // MARK: AVS delegates
+    /**
+     A directive handler function for Alexa Voice Services.
+     
+     - parameter directives: An array of `DirectiveData` received back from AVS.
+     */
+    func directiveHandler(directives: [DirectiveData]) {
+        for directive in directives {
+            if (directive.contentType == "application/json") {
+                do {
+                    let jsonData = try JSONSerialization.jsonObject(with: directive.data) as! [String:Any]
+                    let directiveJson = jsonData["directive"] as! [String:Any]
+                    let header = directiveJson["header"] as! [String:String]
+                    
+                    // store the token for the Speak directive
+                    if (header["name"] == "Speak") {
+                        let payload = directiveJson["payload"] as! [String:String]
+                        avsToken = payload["token"]!
+                    }
+                } catch let ex {
+                    print("Directive data has an error: \(ex.localizedDescription)")
+                }
+            }
+        }
+        
+        for directive in directives {
+            // play the received audio
+            if (directive.contentType == "application/octet-stream") {
+                DispatchQueue.main.async {
+                    () -> Void in
+                    //self.infoLabel.text = "Alexa is speaking"
+                }
+                do {
+                    avsClient.sendEvent(namespace: "SpeechSynthesizer", name: "SpeechStarted", token: avsToken!)
+                    
+                    try audioSession.setCategory(AVAudioSessionCategoryPlayAndRecord, with:[AVAudioSessionCategoryOptions.allowBluetooth, AVAudioSessionCategoryOptions.allowBluetoothA2DP, AVAudioSessionCategoryOptions.defaultToSpeaker])
+                    try audioPlayer = AVAudioPlayer(data: directive.data)
+                    audioPlayer.delegate = self
+                    audioPlayer.prepareToPlay()
+                    audioPlayer.volume = 1.0
+                    audioPlayer.play()
+                } catch let ex {
+                    print("Audio player has an error: \(ex.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    /**
+     A downchannel handler function for Alexa Voice Services.
+     
+     - parameter directive: The directive to be sent to AVS.
+     */
+    func downchannelHandler(directive: String) {
+        // data being sent to Alexa
+        do {
+            let jsonData = try JSONSerialization.jsonObject(with: directive.data(using: String.Encoding.utf8)!) as! [String:Any]
+            let directiveJson = jsonData["directive"] as! [String:Any]
+            let header = directiveJson["header"] as! [String:String]
+            if (header["name"] == "StopCapture") {
+                // Handle StopCapture
+            } else if (header["name"] == "SetAlert") {
+                // Handle SetAlert
+            }
+        } catch let ex {
+            print("Downchannel error: \(ex.localizedDescription)")
+        }
+    }
+    
+    /**
+     A ping handler function for Alexa Voice Services.
+     
+     - parameter success: Whether or not the ping was successful.
+     */
+    func pingHandler(success: Bool) {
+        DispatchQueue.main.async {
+            () -> Void in
+            if (success) {
+                //self.infoLabel.text = "Ping success!"
+            } else {
+                //self.infoLabel.text = "Ping failure!"
+            }
+        }
+    }
+    
+    /**
+     A sync handler function for Alexa Voice Services.
+     
+     - parameter success: Whether or not the sync was successful.
+     */
+    func syncHandler(success: Bool) {
+        DispatchQueue.main.async {
+            () -> Void in
+            if (success) {
+                //self.infoLabel.text = "Sync success!"
+            } else {
+                //self.infoLabel.text = "Sync failure!"
+            }
+        }
     }
     
     /**
@@ -146,9 +278,11 @@ class ReportViewController: UIViewController {
             additionalInfoButton.setTitle("Additional Info", for: .normal)
             additionalInfoButton.isUserInteractionEnabled = false
             additionalInfoCheckbox.isChecked = true
+            isReporting = false
+            reported = true
             
             audioRecorder.pause()
-        } else {
+        } else if !isReporting {
             additionalInfoButton.setTitle("Press Again When Done", for: .normal)
             isReporting = true
             
@@ -159,21 +293,29 @@ class ReportViewController: UIViewController {
     
     @IBAction func helpButtonClick(_ sender: Any) {
         // send a help request to Alexa
+        let url = Bundle.main.url(forResource: "help", withExtension: "wav")
+        do {
+            try avsClient.postRecording(audioData: Data(contentsOf: url!))
+        } catch let ex {
+            print("AVS Client threw an error: \(ex.localizedDescription)")
+        }
         
         // save recorded help message??
     }
     
     @IBAction func lightConditionsButtonClick(_ sender: Any) {
         if lightButton.title(for: .normal) == "Press Again When Done" {
-            lightButton.setTitle("Additional Info", for: .normal)
+            lightButton.setTitle("Light Conditions", for: .normal)
             lightButton.isUserInteractionEnabled = false
             lightCheckbox.isChecked = true
-            
+            isReporting = false
+            reported = true
+
             audioRecorder.pause()
-        } else {
+        } else if !isReporting {
             lightButton.setTitle("Press Again When Done", for: .normal)
             isReporting = true
-            
+
             // record light info
             audioRecorder.record()
         }
@@ -181,12 +323,14 @@ class ReportViewController: UIViewController {
     
     @IBAction func othersActivityButtonClick(_ sender: Any) {
         if othersActivityButton.title(for: .normal) == "Press Again When Done" {
-            othersActivityButton.setTitle("Additional Info", for: .normal)
+            othersActivityButton.setTitle("Others' Activity", for: .normal)
             othersActivityButton.isUserInteractionEnabled = false
             othersActivityCheckbox.isChecked = true
-            
+            isReporting = false
+            reported = true
+
             audioRecorder.pause()
-        } else {
+        } else if !isReporting {
             othersActivityButton.setTitle("Press Again When Done", for: .normal)
             isReporting = true
             
@@ -197,15 +341,17 @@ class ReportViewController: UIViewController {
     
     @IBAction func roadConditionsButtonClick(_ sender: Any) {
         if roadButton.title(for: .normal) == "Press Again When Done" {
-            roadButton.setTitle("Additional Info", for: .normal)
+            roadButton.setTitle("Road Conditions", for: .normal)
             roadButton.isUserInteractionEnabled = false
             roadCheckbox.isChecked = true
+            isReporting = false
+            reported = true
             
             audioRecorder.pause()
-        } else {
+        } else if !isReporting {
             roadButton.setTitle("Press Again When Done", for: .normal)
             isReporting = true
-            
+
             // record road info
             audioRecorder.record()
         }
@@ -213,12 +359,14 @@ class ReportViewController: UIViewController {
     
     @IBAction func weatherConditionsButtonClick(_ sender: Any) {
         if weatherButton.title(for: .normal) == "Press Again When Done" {
-            weatherButton.setTitle("Additional Info", for: .normal)
+            weatherButton.setTitle("Weather Conditions", for: .normal)
             weatherButton.isUserInteractionEnabled = false
             weatherCheckbox.isChecked = true
+            isReporting = false
+            reported = true
             
             audioRecorder.pause()
-        } else {
+        } else if !isReporting {
             weatherButton.setTitle("Press Again When Done", for: .normal)
             isReporting = true
             
@@ -229,12 +377,14 @@ class ReportViewController: UIViewController {
     
     @IBAction func yourActivityButtonClick(_ sender: Any) {
         if yourActivityButton.title(for: .normal) == "Press Again When Done" {
-            yourActivityButton.setTitle("Additional Info", for: .normal)
+            yourActivityButton.setTitle("Your Activity", for: .normal)
             yourActivityButton.isUserInteractionEnabled = false
             yourActivityCheckbox.isChecked = true
+            isReporting = false
+            reported = true
             
             audioRecorder.pause()
-        } else {
+        } else if !isReporting {
             yourActivityButton.setTitle("Press Again When Done", for: .normal)
             isReporting = true
             
@@ -255,7 +405,7 @@ class ReportViewController: UIViewController {
     }
     
     @IBAction func submitButtonClick(_ sender: Any) {
-        if !isReporting {
+        if !reported {
             let alert = UIAlertController(title: "Empty Report", message: "You cannot submit an empty incident report.", preferredStyle: UIAlertControllerStyle.alert)
             
             alert.addAction(UIAlertAction(title: "Ok", style: .cancel, handler: {
@@ -269,6 +419,7 @@ class ReportViewController: UIViewController {
             // submit report to S3
             audioRecorder.stop()
             isReporting = false
+            reported = false
             s3Upload(url: audioRecorder.url)
             
             // notify Alexa that we are done

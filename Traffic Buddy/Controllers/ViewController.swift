@@ -119,6 +119,11 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             locationManager.distanceFilter = 0.5
             locationManager.pausesLocationUpdatesAutomatically = true
             locationManager.headingFilter = 1.0
+            if #available(iOS 11.0, *) {
+                locationManager.showsBackgroundLocationIndicator = true
+            } else {
+                // Fallback on earlier versions
+            }
             locationManager.startUpdatingHeading()
             
             locationTimer = Timer.scheduledTimer(timeInterval: 0.5,
@@ -308,7 +313,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             MotionHelper.accidentDetected = false
             
             updateTextView(text: "sensor threshold reached (crash detected)")
-            wakeAlexa()
+            if isLoggedIn {
+                wakeAlexa()
+            }
         }
         
         lastLocation = myLocation
@@ -464,75 +471,76 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                 }
             }
 
-            let currentLocation = locationManager.location!
-            let nearestIntersection = getClosestIntersection(intersections: intersections, closestToLocation: currentLocation)
-            
-            if nearestIntersection != nil {
-                let intersectionLocation = nearestIntersection!.getLocation()
+            if let currentLocation = locationManager.location {
+                let nearestIntersection = getClosestIntersection(intersections: intersections, closestToLocation: currentLocation)
                 
-                dist = metersToFeet(from: intersectionLocation.distance(from: currentLocation))
-                if isOnTrip {
-                    if dist < autoPollDistance {
-                        appState = 3
-                        
-                        // auto-poll server within distance threshold
-                        if electron != nil && !isPaused {
-                            isPaused = true
-                            readLoopState(silent: true)
+                if nearestIntersection != nil {
+                    let intersectionLocation = nearestIntersection!.getLocation()
+                    
+                    dist = metersToFeet(from: intersectionLocation.distance(from: currentLocation))
+                    if isOnTrip {
+                        if dist < autoPollDistance {
+                            appState = 3
                             
-                            // only auto-poll at most every 2 seconds
-                            autoPollTimer = Timer.scheduledTimer(timeInterval: 2,
-                                                                 target: self,
-                                                                 selector: #selector(self.updateAutoPollPause),
-                                                                 userInfo: nil,
-                                                                 repeats: false)
-                        }
-                        
-                        if dist < autoTriggerDistance {
-                            appState = 4
-
-                            if !isNearIntersection {
-                                // if the user is not already near an intersection, vibrate to notify
-                                var headingThreshold = 10.0
-                                if let dbValue = realm.getObjects(type: ConfigItem.self)?.filter("key = 'HeadingThreshold'").first as? ConfigItem {
-                                    if let val = Double(dbValue.value) {
-                                        headingThreshold = val
-                                    }
-                                }
+                            // auto-poll server within distance threshold
+                            if electron != nil && !isPaused {
+                                isPaused = true
+                                readLoopState(silent: true)
                                 
-                                // check if we are heading within an acceptable degree of the intersection's headings
-                                for h in nearestIntersection!.headings {
-                                    let diff = abs(heading! - h)
-                                    if diff < headingThreshold ||
-                                        360.0 - diff < headingThreshold {
-                                        isNearIntersection = true
-                                        
-                                        triggerRelay(relayNumber: "1", manual: false)
-                                        AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
-                                        break
+                                // only auto-poll at most every 1 second
+                                autoPollTimer = Timer.scheduledTimer(timeInterval: 1.0,
+                                                                     target: self,
+                                                                     selector: #selector(self.updateAutoPollPause),
+                                                                     userInfo: nil,
+                                                                     repeats: false)
+                            }
+                            
+                            if dist < autoTriggerDistance {
+                                appState = 4
+                                
+                                if !isNearIntersection {
+                                    // if the user is not already near an intersection, vibrate to notify
+                                    var headingThreshold = 10.0
+                                    if let dbValue = realm.getObjects(type: ConfigItem.self)?.filter("key = 'HeadingThreshold'").first as? ConfigItem {
+                                        if let val = Double(dbValue.value) {
+                                            headingThreshold = val
+                                        }
+                                    }
+                                    
+                                    // check if we are heading within an acceptable degree of the intersection's headings
+                                    for h in nearestIntersection!.headings {
+                                        let diff = abs(heading! - h)
+                                        if diff < headingThreshold ||
+                                            360.0 - diff < headingThreshold {
+                                            isNearIntersection = true
+                                            
+                                            triggerRelay(relayNumber: "1", manual: false)
+                                            AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
+                                            break
+                                        }
                                     }
                                 }
                             }
+                            else if dist > 200 && isNearIntersection {
+                                // if the user was previously near an intersection, vibrate to notify
+                                isNearIntersection = false
+                                appState = 3
+                                
+                                AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
+                            }
                         }
-                        else if dist > 200 && isNearIntersection {
-                            // if the user was previously near an intersection, vibrate to notify
-                            isNearIntersection = false
-                            appState = 3
-                            
-                            AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
+                        else {
+                            appState = 2
                         }
+                    } else {
+                        // not on a trip
+                        appState = 1
                     }
-                    else {
-                        appState = 2
-                    }
+                    
+                    nearestIntersectionLabel.text = String(format: "%.0f feet from \(nearestIntersection!.title)", dist)
                 } else {
-                    // not on a trip
-                    appState = 1
+                    nearestIntersectionLabel.text = "Unable to determine nearest intersection."
                 }
-                
-                nearestIntersectionLabel.text = String(format: "%.0f feet from \(nearestIntersection!.title)", dist)
-            } else {
-                nearestIntersectionLabel.text = "Unable to determine nearest intersection."
             }
         }
         
@@ -735,7 +743,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                     // from the controller that the relay on message was received
                     self.readLoopState(silent: false)
                 } else {
-                    self.updateTextView(text: "error triggering relay")
+                    self.updateTextView(text: "error triggering relay: \(String(describing: error))")
                 }
             }
             

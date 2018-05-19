@@ -117,7 +117,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             locationManager.delegate = self
             locationManager.desiredAccuracy = kCLLocationAccuracyBest
             locationManager.distanceFilter = 0.5
-            locationManager.pausesLocationUpdatesAutomatically = true
+            locationManager.pausesLocationUpdatesAutomatically = false
             locationManager.headingFilter = 1.0
             if #available(iOS 11.0, *) {
                 locationManager.showsBackgroundLocationIndicator = true

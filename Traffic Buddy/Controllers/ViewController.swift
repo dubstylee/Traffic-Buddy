@@ -115,8 +115,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             locationManager.activityType = CLActivityType.fitness
             locationManager.allowsBackgroundLocationUpdates = true
             locationManager.delegate = self
-            locationManager.desiredAccuracy = kCLLocationAccuracyBest
-            locationManager.distanceFilter = 0.5
+            locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+            locationManager.distanceFilter = 5
             locationManager.pausesLocationUpdatesAutomatically = false
             locationManager.headingFilter = 1.0
             if #available(iOS 11.0, *) {
@@ -125,12 +125,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                 // Fallback on earlier versions
             }
             locationManager.startUpdatingHeading()
+            locationManager.startUpdatingLocation()
             
-            locationTimer = Timer.scheduledTimer(timeInterval: 0.5,
-                                                 target: self,
-                                                 selector: #selector(self.updateLocation),
-                                                 userInfo: nil,
-                                                 repeats: true)
+//            locationTimer = Timer.scheduledTimer(timeInterval: 0.5,
+//                                                 target: self,
+//                                                 selector: #selector(self.updateLocation),
+//                                                 userInfo: nil,
+//                                                 repeats: true)
         }
 
         if ParticleCloud.sharedInstance().injectSessionAccessToken(particleToken!) {
@@ -162,9 +163,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         isPaused = false
     }
     
-    @objc func updateLocation() {
-        locationManager.startUpdatingLocation()
-    }
+//    @objc func updateLocation() {
+//        locationManager.startUpdatingLocation()
+//    }
     
     @objc func updatePollServerButton() {
         pollServerButton.isEnabled = true
@@ -313,14 +314,31 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             MotionHelper.accidentDetected = false
             
             updateTextView(text: "sensor threshold reached (crash detected)")
-            if isLoggedIn {
-                wakeAlexa()
+            
+            if self.isLoggedIn {
+                // display a modal to allow user to cancel before waking Alexa
+                let cancelAlert = UIAlertController(title: "Crash Detected", message: "Press the button below within 30 seconds to cancel.", preferredStyle: UIAlertControllerStyle.alert)
+                
+                cancelAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: {
+                    (action: UIAlertAction!) in
+                    print("User cancelled crash report.")
+                }))
+                
+                present(cancelAlert, animated: true, completion: nil)
+                
+                let when = DispatchTime.now() + 30
+                DispatchQueue.main.asyncAfter(deadline: when) {
+                    if self.presentedViewController != nil {
+                        cancelAlert.dismiss(animated: true, completion: nil)
+                        self.wakeAlexa()
+                    }
+                }
             }
         }
         
         lastLocation = myLocation
         lastSpeed = instantSpeed
-        locationManager.stopUpdatingLocation()
+        //locationManager.stopUpdatingLocation()
         
         speedLabel.text = String(format: "Speed: %.1f mph, Heading: %.1f°", (instantSpeed * metersPerSecToMilesPerHour), ((heading != nil) ? heading! : 0.0))
     }
@@ -741,7 +759,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
                     // NOTE: readLoopState() may return "off" even after triggering the relay
                     // because the loop state is not updated until the box receives a message back
                     // from the controller that the relay on message was received
-                    self.readLoopState(silent: false)
+                    self.readLoopState(silent: true)
                 } else {
                     self.updateTextView(text: "error triggering relay: \(String(describing: error))")
                 }
@@ -889,6 +907,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             isOnTrip = true
             updateTextView(text: "starting bicycle trip")
             MotionHelper.startMotionUpdates(motionManager: self.motionManager)
+            locationManager.desiredAccuracy = kCLLocationAccuracyBest
+            locationManager.distanceFilter = 0.5
         }
         else if startButton.titleLabel?.text == "Stop Trip" {
             startButton.setTitle("Start Trip", for: .normal)
@@ -899,6 +919,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             isOnTrip = false
             updateTextView(text: "stopping bicycle trip")
             MotionHelper.stopMotionUpdates(motionManager: self.motionManager)
+            locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+            locationManager.distanceFilter = 5
         }
     }
 }

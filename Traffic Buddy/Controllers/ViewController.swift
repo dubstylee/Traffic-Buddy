@@ -117,7 +117,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             locationManager.delegate = self
             locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
             locationManager.distanceFilter = 5
-            locationManager.pausesLocationUpdatesAutomatically = false
+            locationManager.pausesLocationUpdatesAutomatically = true
             locationManager.headingFilter = 1.0
             if #available(iOS 11.0, *) {
                 locationManager.showsBackgroundLocationIndicator = true
@@ -144,7 +144,18 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         if let speedTrigger = realm.getObjects(type: ConfigItem.self)?.filter("key = 'UseSpeedTrigger'").first as? ConfigItem {
             useSpeedTrigger = Bool(speedTrigger.value)!
         }
-
+        
+//        let intersection = Intersection()
+//        intersection.title = "18th & Alder"
+//        intersection.longitude = -123.080197
+//        intersection.latitude = 44.040019
+//        let headings = List<Double>()
+//        headings.append(0.1783)
+//        headings.append(180.1783)
+//        intersection.headings = headings
+//
+//        realm.saveObject(obj: intersection)
+ 
         updateTextView(text: "application loaded successfully")
     }
     
@@ -909,6 +920,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             MotionHelper.startMotionUpdates(motionManager: self.motionManager)
             locationManager.desiredAccuracy = kCLLocationAccuracyBest
             locationManager.distanceFilter = 0.5
+            locationManager.pausesLocationUpdatesAutomatically = false
         }
         else if startButton.titleLabel?.text == "Stop Trip" {
             startButton.setTitle("Start Trip", for: .normal)
@@ -921,6 +933,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
             MotionHelper.stopMotionUpdates(motionManager: self.motionManager)
             locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
             locationManager.distanceFilter = 5
+            locationManager.pausesLocationUpdatesAutomatically = true
         }
     }
 }

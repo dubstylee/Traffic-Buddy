@@ -20,6 +20,7 @@
 		D34BAF0C20951B03001B6E1A /* ConfigItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34BAF0B20951B03001B6E1A /* ConfigItem.swift */; };
 		D34BAF0E20958AF7001B6E1A /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34BAF0D20958AF7001B6E1A /* SettingsViewController.swift */; };
 		D34BAF1020962AA4001B6E1A /* RealmHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34BAF0F20962AA4001B6E1A /* RealmHelper.swift */; };
+		D34E75B620E28FF80010AED6 /* IntersectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34E75B520E28FF80010AED6 /* IntersectionViewController.swift */; };
 		D35DD25A208D635500868F8D /* finish.wav in Resources */ = {isa = PBXBuildFile; fileRef = D35DD259208D635500868F8D /* finish.wav */; };
 		D361D0D71F81EB2E0060F25A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0D61F81EB2E0060F25A /* AppDelegate.swift */; };
 		D361D0D91F81EB2E0060F25A /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D361D0D81F81EB2E0060F25A /* ViewController.swift */; };
@@ -50,6 +51,7 @@
 		D34BAF0B20951B03001B6E1A /* ConfigItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigItem.swift; sourceTree = "<group>"; };
 		D34BAF0D20958AF7001B6E1A /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		D34BAF0F20962AA4001B6E1A /* RealmHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealmHelper.swift; sourceTree = "<group>"; };
+		D34E75B520E28FF80010AED6 /* IntersectionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntersectionViewController.swift; sourceTree = "<group>"; };
 		D35DD259208D635500868F8D /* finish.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = finish.wav; sourceTree = "<group>"; };
 		D361D0D31F81EB2E0060F25A /* Traffic Buddy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Traffic Buddy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D361D0D61F81EB2E0060F25A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -168,6 +170,7 @@
 				D34BAF0D20958AF7001B6E1A /* SettingsViewController.swift */,
 				D361D0D81F81EB2E0060F25A /* ViewController.swift */,
 				D3CA55C520A29974006A11CE /* ReportViewController.swift */,
+				D34E75B520E28FF80010AED6 /* IntersectionViewController.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -311,6 +314,7 @@
 				D34BAF0C20951B03001B6E1A /* ConfigItem.swift in Sources */,
 				853211FD2061CFA7000C237F /* MotionHelper.swift in Sources */,
 				85C7AE312046307100B65F16 /* LoginWithAmazonToken.swift in Sources */,
+				D34E75B620E28FF80010AED6 /* IntersectionViewController.swift in Sources */,
 				D34BAF0E20958AF7001B6E1A /* SettingsViewController.swift in Sources */,
 				85C7AE33204631EB00B65F16 /* AlexaVoiceServiceClient.swift in Sources */,
 				85C7AE2F20462DEA00B65F16 /* Settings.swift in Sources */,

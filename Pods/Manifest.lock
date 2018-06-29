@@ -14,9 +14,9 @@ PODS:
   - AFNetworking/Serialization (3.2.1)
   - AFNetworking/UIKit (3.2.1):
     - AFNetworking/NSURLSession
-  - AWSCore (2.6.20)
-  - AWSS3 (2.6.20):
-    - AWSCore (= 2.6.20)
+  - AWSCore (2.6.22)
+  - AWSS3 (2.6.22):
+    - AWSCore (= 2.6.22)
   - Particle-SDK (0.7.0):
     - Particle-SDK/Helpers (= 0.7.0)
     - Particle-SDK/SDK (= 0.7.0)
@@ -24,11 +24,11 @@ PODS:
   - Particle-SDK/SDK (0.7.0):
     - AFNetworking (~> 3.0)
     - Particle-SDK/Helpers
-  - Realm (3.6.0):
-    - Realm/Headers (= 3.6.0)
-  - Realm/Headers (3.6.0)
-  - RealmSwift (3.6.0):
-    - Realm (= 3.6.0)
+  - Realm (3.7.4):
+    - Realm/Headers (= 3.7.4)
+  - Realm/Headers (3.7.4)
+  - RealmSwift (3.7.4):
+    - Realm (= 3.7.4)
 
 DEPENDENCIES:
   - AFNetworking
@@ -37,7 +37,7 @@ DEPENDENCIES:
   - RealmSwift
 
 SPEC REPOS:
-  https://github.com/CocoaPods/Specs.git:
+  https://github.com/cocoapods/specs.git:
     - AFNetworking
     - AWSCore
     - AWSS3
@@ -47,12 +47,12 @@ SPEC REPOS:
 
 SPEC CHECKSUMS:
   AFNetworking: b6f891fdfaed196b46c7a83cf209e09697b94057
-  AWSCore: dd4d3d4fcafdce68a42025c3e9e45b026cf1f33b
-  AWSS3: 69589dec1883cdca872b4ddd1ea2ef814b0846fe
+  AWSCore: faae134779f0f6e46a8d426c0ccc02e34466b785
+  AWSS3: 2b70463225a455ba26494f06346bddb74dedf73d
   Particle-SDK: d08e4a9e42c927bd997cd4817e5a01894ace4187
-  Realm: 08b464b462d4f31bbd4ba5f5a1c8722ef0a700b7
-  RealmSwift: 973e1499c44ab571f894c2c908e2db450be280c3
+  Realm: a469bb59e33f9926102ccaea4349822c53b9117e
+  RealmSwift: a45861b21c180f5cf0f122144b9759fa8dde3e9e
 
 PODFILE CHECKSUM: 901f9b8ae74473b7c4aab0ea3577763faf3689d2
 
-COCOAPODS: 1.5.0
+COCOAPODS: 1.5.3

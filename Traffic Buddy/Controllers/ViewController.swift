@@ -883,6 +883,12 @@ class ViewController: UIViewController, CLLocationManagerDelegate, AVAudioPlayer
         self.navigationController?.pushViewController(controller, animated: true)
     }
     
+    @IBAction func intersectionButtonClick(_ sender: Any) {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let controller = storyboard.instantiateViewController(withIdentifier: "IntersectionView") as! IntersectionViewController
+        self.navigationController?.pushViewController(controller, animated: true)
+    }
+    
     @IBAction func recordSensorsButtonClick(_ sender: Any) {
         if recordSensorsButton.title(for: .normal) == "record" {
             MotionHelper.isRecordingSensors = true

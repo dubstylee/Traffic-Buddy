@@ -42,7 +42,7 @@ class IntersectionViewController: UIViewController {
         }
     }
     var autoPollTimer: Timer?
-    var activePhases: [Int]?
+    var activePhases = [Int]()
     var activeHistory = [([Int], Date)]()
     var lastCache: ([Int], Date)?
     var updateTimer: Timer?
@@ -83,8 +83,14 @@ class IntersectionViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // load settings from local Realm file
-        
+        // stretch progress bars to look better
+        let progressBarHeight: CGFloat = 6.0
+        progressBar1.transform = progressBar1.transform.scaledBy(x: 1, y: progressBarHeight)
+        progressBar1.layer.cornerRadius = progressBarHeight
+        progressBar1.clipsToBounds = true
+        progressBar2.transform = progressBar2.transform.scaledBy(x: 1, y: progressBarHeight)
+        progressBar2.layer.cornerRadius = progressBarHeight
+        progressBar2.clipsToBounds = true
         
         // register the intersection to get good data
         let intersectionId = "b3c0fe11-bbe0-4dd2-9a6d-a77700e13754"
@@ -109,7 +115,7 @@ class IntersectionViewController: UIViewController {
             }
         }.resume()
         
-        updateTimer = Timer.scheduledTimer(timeInterval: 0.05,
+        updateTimer = Timer.scheduledTimer(timeInterval: 0.02,
                                          target: self,
                                          selector: #selector(self.updateProgressBars),
                                          userInfo: nil,
@@ -273,7 +279,7 @@ class IntersectionViewController: UIViewController {
                     x = x + 1
                 }
             }
-            self.progressBar1.progress = (w - 1) / 30
+            self.progressBar1.progress = (w - 1) / 30 // setProgress((w - 1) / 30, animated: true)
             self.progressBar2.progress = (x - 1) / 30
         } else {
             progressBar1.progress = 0

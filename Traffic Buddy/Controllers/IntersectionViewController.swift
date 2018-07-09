@@ -21,7 +21,7 @@ extension DateFormatter {
     }()
 }
 
-class IntersectionViewController: UIViewController {
+class IntersectionViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
     struct Phase: Codable {
         var becameActiveTimestamp: Date
         var currentActiveTime: Float
@@ -46,14 +46,32 @@ class IntersectionViewController: UIViewController {
     var activeHistory = [([Int], Date)]()
     var lastCache: ([Int], Date)?
     var updateTimer: Timer?
-    let realm = try! Realm()
-    
+    var intersections = [Intersection]()
+    var realm: Realm = {
+        let config = Realm.Configuration(
+            // Set the new schema version. This must be greater than the previously used
+            // version (if you've never set a schema version before, the version is 0).
+            schemaVersion: 2,
+            
+            // Set the block which will be called automatically when opening a Realm with
+            // a schema version lower than the one set above
+            migrationBlock: { migration, oldSchemaVersion in
+                if oldSchemaVersion < 2 {
+                    
+                }
+        })
+        Realm.Configuration.defaultConfiguration = config
+        return try! Realm()
+    }()
+
     @IBOutlet weak var progressBar1: UIProgressView!
     @IBOutlet weak var progressBar2: UIProgressView!
     @IBOutlet weak var timingOffsetLabel: UILabel!
     @IBOutlet weak var timingOffsetStepper: UIStepper!
     @IBOutlet weak var statusCheckLabel: UILabel!
     @IBOutlet weak var statusCheckSlider: UISlider!
+    @IBOutlet weak var intersectionPicker: UIPickerView!
+    
     
     override func viewWillAppear(_ animated: Bool) {
         // load config info
@@ -77,11 +95,37 @@ class IntersectionViewController: UIViewController {
                 }
             }
         }
+        
+//        let i = Intersection()
+//        i.title = "13th & Alder"
+//        i.id = "b3c0fe11-bbe0-4dd2-9a6d-a77700e13754"
+//        let j = Intersection()
+//        j.title = "13th & Hilyard"
+//        j.id = "4de40699-dbf3-4616-aed4-a77700e02c7e"
+//        let k = Intersection()
+//        k.title = "13th & Patterson"
+//        k.id = "4bb0d4e7-32c5-4ba8-82b3-a77700df7ca0"
+//        let l = Intersection()
+//        l.title = "13th & High"
+//        l.id = "bae4383a-913a-4fce-a9ae-a77700d4f7bc"
+
+        // load intersections
+        if let inters = RealmHelper.sharedInstance.getObjects(type: Intersection.self) {
+            for i in inters {
+                if let intersection = i as? Intersection {
+                    intersections.append(intersection)
+                }
+            }
+        }
+
         super.viewWillAppear(animated)
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        intersectionPicker.dataSource = self
+        intersectionPicker.delegate = self
         
         // stretch progress bars to look better
         let progressBarHeight: CGFloat = 6.0
@@ -93,7 +137,7 @@ class IntersectionViewController: UIViewController {
         progressBar2.clipsToBounds = true
         
         // register the intersection to get good data
-        let intersectionId = "b3c0fe11-bbe0-4dd2-9a6d-a77700e13754"
+        let intersectionId = "4de40699-dbf3-4616-aed4-a77700e02c7e" //"b3c0fe11-bbe0-4dd2-9a6d-a77700e13754"
         let url = "http://128.223.6.20/api/intersection/register/\(intersectionId)"
         let request : NSMutableURLRequest = NSMutableURLRequest()
         request.url = URL(string: url)
@@ -103,11 +147,10 @@ class IntersectionViewController: UIViewController {
         URLSession.shared.dataTask(with: request as URLRequest) { data, response, error in
             if let data = data {
                 let str = String(data: data, encoding: .utf8)
-                //print("\(String(describing: str))")
                 if str == "\"success\""
                 {
                     print("success")
-                    self.getIntersectionStatus(intersectionId: "b3c0fe11-bbe0-4dd2-9a6d-a77700e13754")
+                    self.getIntersectionStatus(intersectionId: intersectionId)
                 }
             }
             if let error = error {
@@ -120,6 +163,23 @@ class IntersectionViewController: UIViewController {
                                          selector: #selector(self.updateProgressBars),
                                          userInfo: nil,
                                          repeats: true)
+    }
+    
+    
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return intersections.count
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        return intersections[row].title
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        print(intersections[row])
     }
     
     @objc func getIntersectionStatus(intersectionId: String)
@@ -179,7 +239,6 @@ class IntersectionViewController: UIViewController {
 
                 do {
                     let recordJson = try! JSONSerialization.data(withJSONObject: records[phase-1], options: [])
-                    //let str = String(data: recordJson, encoding: .utf8)
                     let record = try decoder.decode(Phase.self, from: recordJson)
                     startTime = record.becameActiveTimestamp
                     print(record)

@@ -13,10 +13,12 @@ import UIKit
 
 @objcMembers
 class Intersection: Object {
+    dynamic var id: String = ""
     dynamic var longitude: Double = 0.0
     dynamic var latitude: Double = 0.0
     dynamic var title: String = ""
     dynamic var headings = List<Double>()
+    dynamic var electronId: String = "" // the device id of the Electron (optional)
 
     required init() {
         super.init()
@@ -41,5 +43,8 @@ class Intersection: Object {
         return CLLocation(latitude: self.latitude, longitude: self.longitude)
     }
     
-    public override var description: String { return "Intersection [\(title): LAT: \(latitude), LONG: \(longitude)\\n" }
+//    override static func primaryKey() -> String? {
+//        return "id"
+//    }
+    public override var description: String { return "Intersection [\(title): LAT: \(latitude), LONG: \(longitude)]" }
 }
